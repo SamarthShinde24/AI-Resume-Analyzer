@@ -1,9 +1,21 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import fs from "node:fs";
 import analyzeRoute from "./routes/analyze.js";
 
-dotenv.config({ path: new URL('.env', import.meta.url).pathname.slice(1) });
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load .env reliably across all operating systems (Windows, Linux, macOS)
+const envPath = path.resolve(__dirname, ".env");
+if (fs.existsSync(envPath)) {
+  dotenv.config({ path: envPath });
+} else {
+  dotenv.config();
+}
 
 const app = express();
 app.use(cors());
