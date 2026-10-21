@@ -1,4 +1,8 @@
 node_modules/
+client/node_modules/
+server/node_modules/
+dist/
+client/dist/
 .env
 .env.local
-server/services/llm.js
+*.log
