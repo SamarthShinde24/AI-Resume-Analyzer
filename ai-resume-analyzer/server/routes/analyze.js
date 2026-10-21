@@ -67,15 +67,22 @@ router.post("/analyze", uploadMiddleware, async (req, res) => {
     }
 
     const resumeText = await extractResumeText(file.buffer, file.mimetype);
-    const truncatedResume = resumeText.slice(0, 3000); // Add this line
 
-    if (resumeText.length < 50) {
+    if (!resumeText || resumeText.length < 50) {
       return res.status(422).json({
         error:
           "Couldn't extract meaningful text from the resume. Try a text-based PDF (not a scanned image).",
       });
     }
-    const result = await analyzeResume(truncatedResume, jobDescription);
+
+    // Pass the full resume content (up to 30,000 characters ~ 6 pages) to prevent truncating skills and experience
+    const MAX_RESUME_CHARS = 30000;
+    const fullResumeText =
+      resumeText.length > MAX_RESUME_CHARS
+        ? resumeText.slice(0, MAX_RESUME_CHARS)
+        : resumeText;
+
+    const result = await analyzeResume(fullResumeText, jobDescription.trim());
     return res.json(result);
   } catch (err) {
     console.error("Analyze error:", err);
