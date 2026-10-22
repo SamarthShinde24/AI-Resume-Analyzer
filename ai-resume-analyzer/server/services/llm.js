@@ -1,4 +1,5 @@
 import { buildAnalyzePrompt } from "../prompts/analyzePrompt.js";
+import { buildTailorPrompt } from "../prompts/tailorPrompt.js";
 
 const SYSTEM_INSTRUCTION =
   "You are an expert ATS (Applicant Tracking System) and senior technical recruiter. You evaluate resumes with rigorous objectivity. You must output strictly valid JSON conforming to the requested schema. Never wrap response in markdown code blocks or add conversational preamble.";
@@ -277,3 +278,50 @@ export async function analyzeResume(resumeText, jdText) {
     }
   }
 }
+
+/**
+ * Generates targeted tailored resume content (summary, headline, keywords, tailored bullets)
+ * aligned with the target job description.
+ */
+export async function tailorResume(resumeText, jdText) {
+  const basePrompt = buildTailorPrompt(resumeText, jdText);
+
+  const attempt = async (extraInstruction = "") => {
+    const rawText = await callStructuredLLM(
+      basePrompt + extraInstruction,
+      "You are an expert executive resume writer. Output strictly valid JSON."
+    );
+    const cleaned = cleanJsonResponse(rawText);
+    const parsed = JSON.parse(cleaned);
+
+    return {
+      ats_headline: String(parsed.ats_headline || "Experienced Technical Professional"),
+      tailored_summary: String(parsed.tailored_summary || ""),
+      core_competencies: Array.isArray(parsed.core_competencies)
+        ? parsed.core_competencies.map(String)
+        : [],
+      tailored_bullets: Array.isArray(parsed.tailored_bullets)
+        ? parsed.tailored_bullets.map((b) => ({
+            context: String(b?.context || "Experience"),
+            original_focus: String(b?.original_focus || ""),
+            tailored_bullet: String(b?.tailored_bullet || ""),
+          }))
+        : [],
+      tailoring_strategy: String(parsed.tailoring_strategy || ""),
+    };
+  };
+
+  try {
+    return await attempt();
+  } catch (initialError) {
+    console.warn("Tailor attempt failed, retrying:", initialError.message);
+    try {
+      return await attempt(
+        "\n\nCRITICAL: Respond with ONLY a single raw JSON object matching the requested schema. No markdown fences, no explanatory text."
+      );
+    } catch (retryError) {
+      throw new Error(`Failed to generate tailored resume content: ${retryError.message}`);
+    }
+  }
+}
+
