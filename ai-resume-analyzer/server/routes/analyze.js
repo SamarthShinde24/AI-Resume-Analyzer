@@ -66,12 +66,12 @@ router.post("/analyze", uploadMiddleware, async (req, res) => {
         .json({ error: "Job description is missing or too short." });
     }
 
-    const resumeText = await extractResumeText(file.buffer, file.mimetype);
+    const resumeText = await extractResumeText(file.buffer, file.mimetype, file.originalname);
 
     if (!resumeText || resumeText.length < 50) {
       return res.status(422).json({
         error:
-          "Couldn't extract meaningful text from the resume. Try a text-based PDF (not a scanned image).",
+          "Couldn't extract meaningful text from the resume. Please ensure the document is a readable PDF, DOCX, or text file (not a scanned image).",
       });
     }
 
