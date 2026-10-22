@@ -196,8 +196,22 @@ function normalizeAnalysisResult(parsed) {
 
   const summary = String(parsed.summary || "No summary provided.");
 
+  const rawBreakdown = parsed.score_breakdown || {};
+  const normalizeSubScore = (val, fallback) => {
+    const n = Number(val);
+    return Number.isFinite(n) ? Math.max(0, Math.min(100, Math.round(n))) : fallback;
+  };
+
+  const score_breakdown = {
+    skills_match: normalizeSubScore(rawBreakdown.skills_match, match_score),
+    experience_fit: normalizeSubScore(rawBreakdown.experience_fit, match_score),
+    quantifiable_impact: normalizeSubScore(rawBreakdown.quantifiable_impact, Math.max(30, match_score - 10)),
+    ats_readability: normalizeSubScore(rawBreakdown.ats_readability, 85),
+  };
+
   return {
     match_score,
+    score_breakdown,
     matched_skills,
     missing_skills,
     weak_bullets,
