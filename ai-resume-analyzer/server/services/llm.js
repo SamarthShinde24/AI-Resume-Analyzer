@@ -1,21 +1,34 @@
 import { buildAnalyzePrompt } from "../prompts/analyzePrompt.js";
 
+const SYSTEM_INSTRUCTION =
+  "You are an expert ATS (Applicant Tracking System) and senior technical recruiter. You evaluate resumes with rigorous objectivity. You must output strictly valid JSON conforming to the requested schema. Never wrap response in markdown code blocks or add conversational preamble.";
+
 /**
- * Strips markdown code blocks and returns clean JSON string.
+ * Strips markdown code blocks and isolates valid JSON substring.
  */
-function cleanJsonResponse(text) {
+export function cleanJsonResponse(text) {
   if (!text) return "";
-  return text
-    .replace(/^```json\s*/im, "")
-    .replace(/^```\s*/im, "")
-    .replace(/```\s*$/m, "")
-    .trim();
+  let cleaned = text.trim();
+
+  // Strip markdown fences
+  if (cleaned.startsWith("```")) {
+    cleaned = cleaned.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+  }
+
+  // If stray preamble/postscript exists, isolate JSON object bounds
+  const firstBrace = cleaned.indexOf("{");
+  const lastBrace = cleaned.lastIndexOf("}");
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    cleaned = cleaned.slice(firstBrace, lastBrace + 1);
+  }
+
+  return cleaned.trim();
 }
 
 /**
  * Resolves which provider and API key to use based on environment configuration.
  */
-function resolveProviderConfig() {
+export function resolveProviderConfig() {
   const explicitProvider = process.env.LLM_PROVIDER?.toLowerCase().trim();
 
   const groqKey = process.env.GROQ_API_KEY?.trim();
@@ -74,9 +87,10 @@ function resolveProviderConfig() {
 }
 
 /**
- * Dispatches a completion request to the configured LLM provider.
+ * Dispatches a completion request using native structured JSON mode where supported.
  */
-async function callLLM(config, prompt) {
+export async function callStructuredLLM(prompt, systemInstruction = SYSTEM_INSTRUCTION) {
+  const config = resolveProviderConfig();
   const { provider, apiKey, model } = config;
 
   if (provider === "groq" || provider === "openai") {
@@ -85,19 +99,37 @@ async function callLLM(config, prompt) {
         ? "https://api.groq.com/openai/v1/chat/completions"
         : "https://api.openai.com/v1/chat/completions";
 
-    const res = await fetch(endpoint, {
+    const payload = {
+      model,
+      messages: [
+        { role: "system", content: `${systemInstruction} Output valid JSON.` },
+        { role: "user", content: prompt },
+      ],
+      temperature: 0.2,
+      response_format: { type: "json_object" },
+    };
+
+    let res = await fetch(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({
-        model,
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.2,
-        response_format: { type: "json_object" },
-      }),
+      body: JSON.stringify(payload),
     });
+
+    // Fallback if model doesn't support response_format: { type: "json_object" }
+    if (!res.ok && res.status === 400) {
+      delete payload.response_format;
+      res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify(payload),
+      });
+    }
 
     if (!res.ok) {
       const errBody = await res.text();
@@ -120,6 +152,7 @@ async function callLLM(config, prompt) {
         model,
         max_tokens: 4096,
         temperature: 0.2,
+        system: `${systemInstruction} Output valid JSON only.`,
         messages: [{ role: "user", content: prompt }],
       }),
     });
@@ -177,11 +210,10 @@ function normalizeAnalysisResult(parsed) {
  * Automatically retries once with a stricter instruction if JSON parsing fails.
  */
 export async function analyzeResume(resumeText, jdText) {
-  const config = resolveProviderConfig();
   const basePrompt = buildAnalyzePrompt(resumeText, jdText);
 
   const attempt = async (extraInstruction = "") => {
-    const rawText = await callLLM(config, basePrompt + extraInstruction);
+    const rawText = await callStructuredLLM(basePrompt + extraInstruction);
     const cleaned = cleanJsonResponse(rawText);
     const parsed = JSON.parse(cleaned);
     return normalizeAnalysisResult(parsed);
@@ -196,7 +228,7 @@ export async function analyzeResume(resumeText, jdText) {
         "\n\nCRITICAL: Respond with ONLY a single raw JSON object matching the requested schema. No markdown fences, no explanatory text."
       );
     } catch (retryError) {
-      throw new Error(`Failed to get valid JSON from ${config.provider} after retry: ${retryError.message}`);
+      throw new Error(`Failed to get valid JSON from LLM provider after retry: ${retryError.message}`);
     }
   }
 }
