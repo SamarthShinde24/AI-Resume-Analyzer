@@ -23,6 +23,14 @@ Return ONLY valid JSON matching this exact schema:
   },
   "matched_skills": [<strings — specific skills/tools the resume clearly demonstrates that match the JD>],
   "missing_skills": [<strings — key skills/tools required or desired by the JD that are absent from the resume>],
+  "keyword_checklist": [
+    {
+      "skill": "<skill or tool name from JD>",
+      "type": "<'required' for core job requirements, 'nice_to_have' for preferred qualifications>",
+      "status": "<'missing' if absent or weak in resume, 'matched' if clearly evidenced>",
+      "tip": "<actionable advice: where and how to integrate this keyword naturally into specific resume sections (e.g. 'Add to Skills section and mention in Project 1 architecture')>"
+    }
+  ],
   "weak_bullets": [
     {
       "original": "<verbatim bullet point from the resume>",
@@ -33,12 +41,10 @@ Return ONLY valid JSON matching this exact schema:
   "summary": "<2-3 sentence honest verdict on fit, strengths, and the single highest-leverage improvement to make>"
 }
 
-Scoring Guidelines:
+Scoring & Checklist Guidelines:
 - match_score: Objective rating. A resume missing critical requirements must score below 60.
-- skills_match: Evaluate actual demonstrated competency, not just keyword mentions.
-- experience_fit: Penalize overqualification or underqualification relative to role seniority.
-- quantifiable_impact: Resumes that only list responsibilities (e.g. "Worked on APIs") rather than metrics (e.g. "Engineered 12 REST APIs reducing latency by 35%") must receive lower scores.
-- ats_readability: Rate standard conventions, clarity, and keyword discoverability.
+- keyword_checklist: Include 6-12 high-priority keywords from the JD. Distinguish between 'required' (must-haves) and 'nice_to_have' (bonus qualifications).
+- Provide concrete placement tips for missing keywords (e.g. which bullet or section to enrich).
 - Include 3 to 5 weak_bullets with the highest-impact potential for improvement.
 - Rewrites must be realistic for the candidate's background without fabricating contradictory facts.`;
 }

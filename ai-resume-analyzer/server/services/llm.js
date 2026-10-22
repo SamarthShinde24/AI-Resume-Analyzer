@@ -209,11 +209,42 @@ function normalizeAnalysisResult(parsed) {
     ats_readability: normalizeSubScore(rawBreakdown.ats_readability, 85),
   };
 
+  const rawChecklist = Array.isArray(parsed.keyword_checklist) ? parsed.keyword_checklist : [];
+  const keyword_checklist = rawChecklist
+    .map((item) => ({
+      skill: String(item?.skill || "").trim(),
+      type: item?.type === "nice_to_have" ? "nice_to_have" : "required",
+      status: item?.status === "matched" ? "matched" : "missing",
+      tip: String(item?.tip || "Integrate this keyword into your relevant project or experience bullets.").trim(),
+    }))
+    .filter((k) => k.skill.length > 0);
+
+  // Fallback: If model only supplied missing_skills, populate keyword_checklist automatically
+  if (keyword_checklist.length === 0) {
+    missing_skills.forEach((skill) => {
+      keyword_checklist.push({
+        skill,
+        type: "required",
+        status: "missing",
+        tip: `Add ${skill} to your technical skills summary or describe hands-on usage in a project.`,
+      });
+    });
+    matched_skills.forEach((skill) => {
+      keyword_checklist.push({
+        skill,
+        type: "required",
+        status: "matched",
+        tip: `Demonstrated match. Keep prominent in your technical highlights.`,
+      });
+    });
+  }
+
   return {
     match_score,
     score_breakdown,
     matched_skills,
     missing_skills,
+    keyword_checklist,
     weak_bullets,
     summary,
   };
