@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { tailorResume } from "../api.js";
 
-export default function TailorResume({ file, jobDescription, resumeText }) {
+export default function TailorResume({ file, jobDescription, resumeText, onToast }) {
   const [loading, setLoading] = useState(false);
   const [tailoredData, setTailoredData] = useState(null);
   const [error, setError] = useState(null);
@@ -20,9 +20,12 @@ export default function TailorResume({ file, jobDescription, resumeText }) {
     }
   };
 
-  const copyToClipboard = (text, key) => {
+  const copyToClipboard = (text, key, label = "Content") => {
     navigator.clipboard.writeText(text);
     setCopiedKey(key);
+    if (onToast) {
+      onToast(`${label} copied to clipboard!`);
+    }
     setTimeout(() => {
       setCopiedKey(null);
     }, 2000);

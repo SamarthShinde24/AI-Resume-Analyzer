@@ -8,6 +8,15 @@ Powered by native structured JSON output across **Groq**, **Anthropic Claude**, 
 
 ## Key Features
 
+- **Modern UI & UX Enhancements:**
+  - **Interactive Drag-and-Drop Dropzone:** Seamless file uploader with glowing drop state, extension badges (PDF, DOCX, TXT), file size display, and clear/replace actions.
+  - **Quick Demo Presets:** Pre-loaded sample resumes and job descriptions (*Senior Full-Stack Engineer*, *AI / ML Engineer*) for instant 1-click evaluation without searching for files.
+  - **Step-by-Step Animated Loading Pipeline:** Multi-phase progress indicator guiding users through document parsing, keyword matching, score calculation, and bullet rewriting.
+  - **Visual Radial Progress Gauge:** Circular SVG gauge with animated stroke indicator and color-coded alignment tiers (*Exceptional*, *Strong Candidate*, *Moderate Fit*, *High Risk*).
+  - **Tabbed Results Architecture:** Organized tabs for **Overview**, **Skills Breakdown**, **Bullet Rewrites**, **Full Audit Report**, and **Tailor My Resume**.
+  - **One-Click Copy & Toast Notifications:** Floating slide-up toast notification system confirming clipboard copy for individual rewrites, headline, summary, and bulk bullets.
+  - **Printable Full Audit Compliance Sheet:** Comprehensive ATS criteria weights table, section parseability audit, and priority action roadmap with print-to-PDF support.
+
 - **Multi-Dimensional ATS Scoring:**
   - **Overall Match Score:** Weighted composite score (0–100) reflecting true alignment.
   - **Skills Match:** Direct hard and functional skills alignment against job requirements.
@@ -42,7 +51,7 @@ Powered by native structured JSON output across **Groq**, **Anthropic Claude**, 
 - **Frontend:** React 18, Vite 5, Tailwind CSS
 - **Backend:** Node.js, Express, Multer
 - **Parsers:** `pdf-parse` (PDF), `mammoth` (DOCX)
-- **AI Providers:** Groq (`llama-3.3-70b-versatile`), Anthropic (`claude-3-5-sonnet`), OpenAI (`gpt-4o-mini`)
+- **AI Providers:** Groq (`llama-3.3-70b-versatile` / `openai/gpt-oss-120b`), Anthropic (`claude-3-5-sonnet`), OpenAI (`gpt-4o-mini`)
 
 ---
 

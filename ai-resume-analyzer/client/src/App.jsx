@@ -6,15 +6,24 @@ import BulletRewrites from "./components/BulletRewrites.jsx";
 import TailorResume from "./components/TailorResume.jsx";
 import LoadingSteps from "./components/LoadingSteps.jsx";
 import FullAudit from "./components/FullAudit.jsx";
+import Toast from "./components/Toast.jsx";
 import { analyzeResume } from "./api.js";
 
 export default function App() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState("scores");
+  const [activeTab, setActiveTab] = useState("overview");
   const [currentFile, setCurrentFile] = useState(null);
   const [currentJd, setCurrentJd] = useState("");
+  const [toast, setToast] = useState(null);
+
+  const showToast = (message) => {
+    setToast({ message, id: Date.now() });
+    setTimeout(() => {
+      setToast(null);
+    }, 2600);
+  };
 
   const handleSubmit = async (file, jobDescription) => {
     setLoading(true);
@@ -192,7 +201,10 @@ export default function App() {
               )}
 
               {activeTab === "rewrites" && (
-                <BulletRewrites bullets={result.weak_bullets} />
+                <BulletRewrites
+                  bullets={result.weak_bullets}
+                  onToast={showToast}
+                />
               )}
 
               {activeTab === "audit" && (
@@ -209,12 +221,16 @@ export default function App() {
                 <TailorResume
                   file={currentFile}
                   jobDescription={currentJd}
+                  onToast={showToast}
                 />
               )}
             </div>
           </div>
         )}
       </main>
+
+      {/* Global Floating Toast */}
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   );
 }
