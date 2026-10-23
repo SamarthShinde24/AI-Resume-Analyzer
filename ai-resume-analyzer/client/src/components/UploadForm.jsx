@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { SAMPLE_PRESETS } from "../data/samplePresets.js";
 
 export default function UploadForm({ onSubmit, loading }) {
   const [file, setFile] = useState(null);
@@ -11,6 +12,14 @@ export default function UploadForm({ onSubmit, loading }) {
     const kb = bytes / 1024;
     if (kb < 1024) return `${kb.toFixed(1)} KB`;
     return `${(kb / 1024).toFixed(2)} MB`;
+  };
+
+  const handleSelectPreset = (preset) => {
+    const sampleFile = new File([preset.resumeText], preset.fileName, {
+      type: "text/plain",
+    });
+    setFile(sampleFile);
+    setJobDescription(preset.jobDescription);
   };
 
   const handleDrop = (e) => {
@@ -30,6 +39,29 @@ export default function UploadForm({ onSubmit, loading }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-3xl mx-auto">
+      {/* Sample Presets Quick Demo Bar */}
+      <div className="bg-white border border-gray-200 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+        <div className="flex items-center gap-2">
+          <span className="text-amber-500 font-bold">⚡</span>
+          <span className="text-xs font-semibold text-gray-700">Quick Demo Presets:</span>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {SAMPLE_PRESETS.map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              onClick={() => handleSelectPreset(preset)}
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition cursor-pointer"
+            >
+              <span>{preset.title}</span>
+              <span className="text-[10px] text-indigo-500 bg-white/70 px-1.5 py-0.2 rounded font-normal">
+                {preset.badge}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Resume Upload Dropzone */}
       <div>
         <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">
