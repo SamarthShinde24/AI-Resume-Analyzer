@@ -4,6 +4,7 @@ import ScoreCard from "./components/ScoreCard.jsx";
 import SkillGaps from "./components/SkillGaps.jsx";
 import BulletRewrites from "./components/BulletRewrites.jsx";
 import TailorResume from "./components/TailorResume.jsx";
+import LoadingSteps from "./components/LoadingSteps.jsx";
 import { analyzeResume } from "./api.js";
 
 export default function App() {
@@ -89,8 +90,11 @@ export default function App() {
           </div>
         )}
 
+        {/* Loading Progress State */}
+        {loading && <LoadingSteps />}
+
         {/* Upload Form */}
-        {!result && <UploadForm onSubmit={handleSubmit} loading={loading} />}
+        {!result && !loading && <UploadForm onSubmit={handleSubmit} loading={loading} />}
 
         {/* Error Alert */}
         {error && (
