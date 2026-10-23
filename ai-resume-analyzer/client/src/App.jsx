@@ -5,6 +5,7 @@ import SkillGaps from "./components/SkillGaps.jsx";
 import BulletRewrites from "./components/BulletRewrites.jsx";
 import TailorResume from "./components/TailorResume.jsx";
 import LoadingSteps from "./components/LoadingSteps.jsx";
+import FullAudit from "./components/FullAudit.jsx";
 import { analyzeResume } from "./api.js";
 
 export default function App() {
@@ -25,7 +26,7 @@ export default function App() {
     try {
       const data = await analyzeResume(file, jobDescription);
       setResult(data);
-      setActiveTab("scores");
+      setActiveTab("overview");
     } catch (err) {
       setError(err.message || "Failed to analyze resume.");
     } finally {
@@ -111,28 +112,28 @@ export default function App() {
         {result && (
           <div className="mt-4 space-y-6">
             {/* Navigation Tabs */}
-            <div className="flex border-b border-slate-200 bg-white rounded-t-xl px-2 pt-2 gap-1 overflow-x-auto">
+            <div className="flex border-b border-slate-200 bg-white rounded-t-2xl px-2 pt-2 gap-1 overflow-x-auto shadow-2xs">
               <button
                 type="button"
-                onClick={() => setActiveTab("scores")}
-                className={`px-4 py-2.5 text-xs font-bold rounded-lg transition whitespace-nowrap ${
-                  activeTab === "scores"
+                onClick={() => setActiveTab("overview")}
+                className={`px-4 py-2.5 text-xs font-bold rounded-lg transition whitespace-nowrap cursor-pointer ${
+                  activeTab === "overview"
                     ? "bg-indigo-50 text-indigo-700 border-b-2 border-indigo-600"
                     : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                 }`}
               >
-                📊 Score & ATS Audit
+                📊 Overview
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab("keywords")}
-                className={`px-4 py-2.5 text-xs font-bold rounded-lg transition whitespace-nowrap ${
+                className={`px-4 py-2.5 text-xs font-bold rounded-lg transition whitespace-nowrap cursor-pointer ${
                   activeTab === "keywords"
                     ? "bg-indigo-50 text-indigo-700 border-b-2 border-indigo-600"
                     : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                 }`}
               >
-                🔍 Keyword Checklist (
+                🔍 Skills Breakdown (
                 {result.keyword_checklist?.length ||
                   (result.matched_skills?.length || 0) + (result.missing_skills?.length || 0)}
                 )
@@ -140,7 +141,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setActiveTab("rewrites")}
-                className={`px-4 py-2.5 text-xs font-bold rounded-lg transition whitespace-nowrap ${
+                className={`px-4 py-2.5 text-xs font-bold rounded-lg transition whitespace-nowrap cursor-pointer ${
                   activeTab === "rewrites"
                     ? "bg-indigo-50 text-indigo-700 border-b-2 border-indigo-600"
                     : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
@@ -150,8 +151,19 @@ export default function App() {
               </button>
               <button
                 type="button"
+                onClick={() => setActiveTab("audit")}
+                className={`px-4 py-2.5 text-xs font-bold rounded-lg transition whitespace-nowrap cursor-pointer ${
+                  activeTab === "audit"
+                    ? "bg-indigo-50 text-indigo-700 border-b-2 border-indigo-600"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                }`}
+              >
+                📑 Full Audit Report
+              </button>
+              <button
+                type="button"
                 onClick={() => setActiveTab("tailor")}
-                className={`px-4 py-2.5 text-xs font-bold rounded-lg transition whitespace-nowrap ${
+                className={`px-4 py-2.5 text-xs font-bold rounded-lg transition whitespace-nowrap cursor-pointer ${
                   activeTab === "tailor"
                     ? "bg-indigo-50 text-indigo-700 border-b-2 border-indigo-600"
                     : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
@@ -163,7 +175,7 @@ export default function App() {
 
             {/* Tab Contents */}
             <div className="space-y-6">
-              {activeTab === "scores" && (
+              {activeTab === "overview" && (
                 <ScoreCard
                   score={result.match_score}
                   summary={result.summary}
@@ -181,6 +193,16 @@ export default function App() {
 
               {activeTab === "rewrites" && (
                 <BulletRewrites bullets={result.weak_bullets} />
+              )}
+
+              {activeTab === "audit" && (
+                <FullAudit
+                  score={result.match_score}
+                  breakdown={result.score_breakdown}
+                  summary={result.summary}
+                  checklist={result.keyword_checklist}
+                  weakBullets={result.weak_bullets}
+                />
               )}
 
               {activeTab === "tailor" && (

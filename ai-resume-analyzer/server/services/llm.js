@@ -11,6 +11,9 @@ export function cleanJsonResponse(text) {
   if (!text) return "";
   let cleaned = text.trim();
 
+  // Strip think blocks if any
+  cleaned = cleaned.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+
   // Strip markdown fences
   if (cleaned.startsWith("```")) {
     cleaned = cleaned.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
@@ -57,7 +60,7 @@ export function resolveProviderConfig() {
       return {
         provider: "groq",
         apiKey: groqKey,
-        model: process.env.GROQ_MODEL || process.env.LLM_MODEL || "llama-3.3-70b-versatile",
+        model: process.env.GROQ_MODEL || process.env.LLM_MODEL || "openai/gpt-oss-120b",
       };
     }
     case "anthropic": {
@@ -100,45 +103,79 @@ export async function callStructuredLLM(prompt, systemInstruction = SYSTEM_INSTR
         ? "https://api.groq.com/openai/v1/chat/completions"
         : "https://api.openai.com/v1/chat/completions";
 
-    const payload = {
-      model,
-      messages: [
-        { role: "system", content: `${systemInstruction} Output valid JSON.` },
-        { role: "user", content: prompt },
-      ],
-      temperature: 0.2,
-      response_format: { type: "json_object" },
-    };
+    const candidateModels =
+      provider === "groq"
+        ? [model, "openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b"].filter(
+            (m, i, arr) => m && arr.indexOf(m) === i
+          )
+        : [model];
 
-    let res = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify(payload),
-    });
+    let lastError = null;
+    for (const curModel of candidateModels) {
+      const payload = {
+        model: curModel,
+        messages: [
+          { role: "system", content: `${systemInstruction} Output valid JSON.` },
+          { role: "user", content: prompt },
+        ],
+        temperature: 0.2,
+        response_format: { type: "json_object" },
+      };
 
-    // Fallback if model doesn't support response_format: { type: "json_object" }
-    if (!res.ok && res.status === 400) {
-      delete payload.response_format;
-      res = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify(payload),
-      });
+      let res;
+      try {
+        res = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify(payload),
+        });
+
+        // Fallback if model doesn't support response_format: { type: "json_object" }
+        if (!res.ok && res.status === 400) {
+          delete payload.response_format;
+          res = await fetch(endpoint, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify(payload),
+          });
+        }
+
+        if (!res.ok) {
+          const errBody = await res.text();
+          lastError = new Error(`${provider.toUpperCase()} API error (${res.status}): ${errBody}`);
+          if (
+            provider === "groq" &&
+            (res.status === 404 ||
+              errBody.includes("model_not_found") ||
+              errBody.includes("decommissioned"))
+          ) {
+            console.warn(`Model "${curModel}" unavailable on Groq. Trying fallback...`);
+            continue;
+          }
+          throw lastError;
+        }
+
+        const data = await res.json();
+        return data.choices?.[0]?.message?.content || "";
+      } catch (err) {
+        lastError = err;
+        if (
+          provider === "groq" &&
+          (err.message.includes("model_not_found") || err.message.includes("decommissioned") || err.message.includes("404"))
+        ) {
+          continue;
+        }
+        throw err;
+      }
     }
 
-    if (!res.ok) {
-      const errBody = await res.text();
-      throw new Error(`${provider.toUpperCase()} API error (${res.status}): ${errBody}`);
-    }
-
-    const data = await res.json();
-    return data.choices?.[0]?.message?.content || "";
+    if (lastError) throw lastError;
   }
 
   if (provider === "anthropic") {

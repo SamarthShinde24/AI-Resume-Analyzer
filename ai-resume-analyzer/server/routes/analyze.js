@@ -86,7 +86,7 @@ router.post("/analyze", uploadMiddleware, async (req, res) => {
     return res.json(result);
   } catch (err) {
     console.error("Analyze error:", err);
-    return res.status(500).json({ error: "Analysis failed. Please try again." });
+    return res.status(500).json({ error: err.message || "Analysis failed. Please try again." });
   }
 });
 
