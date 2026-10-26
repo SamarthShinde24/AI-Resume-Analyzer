@@ -7,6 +7,9 @@ import TailorResume from "./components/TailorResume.jsx";
 import LoadingSteps from "./components/LoadingSteps.jsx";
 import FullAudit from "./components/FullAudit.jsx";
 import Toast from "./components/Toast.jsx";
+import ExportModal from "./components/ExportModal.jsx";
+import VersionHistory from "./components/VersionHistory.jsx";
+import VersionCompareModal from "./components/VersionCompareModal.jsx";
 import { analyzeResume } from "./api.js";
 import { getHistory, saveAnalysis, extractRoleTitle } from "./services/historyService.js";
 
@@ -20,12 +23,30 @@ export default function App() {
   const [toast, setToast] = useState(null);
   const [history, setHistory] = useState(() => getHistory());
   const [activeVersionLabel, setActiveVersionLabel] = useState(null);
+  const [isExportOpen, setIsExportOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [compareVersions, setCompareVersions] = useState(null);
 
   const showToast = (message) => {
     setToast({ message, id: Date.now() });
     setTimeout(() => {
       setToast(null);
     }, 2600);
+  };
+
+  const handleRestoreVersion = (snapshot) => {
+    setResult(snapshot.result);
+    setCurrentFile({ name: snapshot.fileName });
+    setCurrentJd(snapshot.jobDescription);
+    setActiveVersionLabel(snapshot.versionLabel);
+    setActiveTab("overview");
+    setIsHistoryOpen(false);
+    showToast(`Restored snapshot ${snapshot.versionLabel} (${snapshot.score}% match)`);
+  };
+
+  const handleOpenComparison = (vOld, vNew) => {
+    setCompareVersions({ vOld, vNew });
+    setIsHistoryOpen(false);
   };
 
   const handleSubmit = async (file, jobDescription) => {
@@ -93,15 +114,40 @@ export default function App() {
             </div>
           </div>
 
-          {result && (
+          <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={handleReset}
-              className="text-xs font-semibold text-slate-600 hover:text-indigo-600 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:border-indigo-300 transition"
+              onClick={() => setIsHistoryOpen(true)}
+              className="text-xs font-semibold text-slate-700 hover:text-indigo-600 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:border-indigo-300 transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
             >
-              ← Analyze New Resume
+              <span>📜 History</span>
+              {history.length > 0 && (
+                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                  {history.length}
+                </span>
+              )}
             </button>
-          )}
+
+            {result && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setIsExportOpen(true)}
+                  className="text-xs font-bold text-indigo-700 hover:text-indigo-900 px-3 py-1.5 rounded-lg border border-indigo-200 bg-indigo-50/80 hover:bg-indigo-100 transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                >
+                  <span>📥 Export Report</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  className="text-xs font-semibold text-slate-600 hover:text-indigo-600 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:border-indigo-300 transition cursor-pointer"
+                >
+                  ← New
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
@@ -252,6 +298,38 @@ export default function App() {
           </div>
         )}
       </main>
+
+      {/* Export Modal */}
+      <ExportModal
+        isOpen={isExportOpen}
+        onClose={() => setIsExportOpen(false)}
+        result={result}
+        meta={{
+          fileName: currentFile?.name,
+          roleTitle: extractRoleTitle(currentJd),
+        }}
+        onToast={showToast}
+      />
+
+      {/* Version History Drawer */}
+      <VersionHistory
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        history={history}
+        onSelectVersion={handleRestoreVersion}
+        onCompareVersions={handleOpenComparison}
+        onHistoryChange={(newHistory) => setHistory(newHistory)}
+        onToast={showToast}
+      />
+
+      {/* Version Comparison Modal */}
+      <VersionCompareModal
+        isOpen={Boolean(compareVersions)}
+        onClose={() => setCompareVersions(null)}
+        vOld={compareVersions?.vOld}
+        vNew={compareVersions?.vNew}
+        onRestoreVersion={handleRestoreVersion}
+      />
 
       {/* Global Floating Toast */}
       <Toast toast={toast} onClose={() => setToast(null)} />
