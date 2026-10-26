@@ -8,6 +8,7 @@ import LoadingSteps from "./components/LoadingSteps.jsx";
 import FullAudit from "./components/FullAudit.jsx";
 import Toast from "./components/Toast.jsx";
 import { analyzeResume } from "./api.js";
+import { getHistory, saveAnalysis, extractRoleTitle } from "./services/historyService.js";
 
 export default function App() {
   const [result, setResult] = useState(null);
@@ -17,6 +18,8 @@ export default function App() {
   const [currentFile, setCurrentFile] = useState(null);
   const [currentJd, setCurrentJd] = useState("");
   const [toast, setToast] = useState(null);
+  const [history, setHistory] = useState(() => getHistory());
+  const [activeVersionLabel, setActiveVersionLabel] = useState(null);
 
   const showToast = (message) => {
     setToast({ message, id: Date.now() });
@@ -36,6 +39,19 @@ export default function App() {
       const data = await analyzeResume(file, jobDescription);
       setResult(data);
       setActiveTab("overview");
+
+      // Auto-save snapshot into version history
+      const snapshot = saveAnalysis(data, {
+        fileName: file.name,
+        jobDescription,
+        roleTitle: extractRoleTitle(jobDescription),
+      });
+
+      if (snapshot) {
+        setHistory(getHistory());
+        setActiveVersionLabel(snapshot.versionLabel);
+        showToast(`Saved analysis as ${snapshot.versionLabel} (${snapshot.score}% match)`);
+      }
     } catch (err) {
       setError(err.message || "Failed to analyze resume.");
     } finally {
@@ -48,6 +64,7 @@ export default function App() {
     setError(null);
     setCurrentFile(null);
     setCurrentJd("");
+    setActiveVersionLabel(null);
   };
 
   return (
@@ -60,9 +77,16 @@ export default function App() {
               🎯
             </div>
             <div>
-              <h1 className="text-base font-bold text-slate-900 leading-tight">
-                AI Resume & ATS Analyzer
-              </h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-base font-bold text-slate-900 leading-tight">
+                  AI Resume & ATS Analyzer
+                </h1>
+                {activeVersionLabel && (
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200">
+                    {activeVersionLabel}
+                  </span>
+                )}
+              </div>
               <p className="text-[11px] font-medium text-slate-500">
                 Multi-Dimensional Scoring • DOCX & PDF • Tailored Generation
               </p>
