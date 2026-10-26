@@ -1,3 +1,35 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer utilities {
+  @media print {
+    @page {
+      margin: 1.2cm;
+      size: auto;
+    }
+
+    body {
+      background: #ffffff !important;
+      color: #0f172a !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    header,
+    nav,
+    button,
+    .print\:hidden {
+      display: none !important;
+    }
+
+    .break-inside-avoid,
+    table,
+    tr,
+    .rounded-2xl,
+    .rounded-3xl {
+      break-inside: avoid !important;
+      page-break-inside: avoid !important;
+    }
+  }
+}
