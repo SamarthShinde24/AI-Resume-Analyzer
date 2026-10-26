@@ -8,6 +8,12 @@ Powered by native structured JSON output across **Groq**, **Anthropic Claude**, 
 
 ## Key Features
 
+- **Advanced Portfolio Features:**
+  - **Single-Command Monorepo Setup:** Boot both backend and frontend concurrently with a single `npm run dev` from the repository root.
+  - **PDF & Markdown Report Export:** Download complete interview-prep audit sheets in GitHub-flavored Markdown (`.md`) or print-optimized PDF with custom page-break formatting.
+  - **Resume Version History:** Automatically logs revision snapshots (`v1`, `v2`, `v3`...) with local persistence to track score progression over time.
+  - **Side-by-Side Version Comparison:** Compare any two versions side-by-side with overall score delta (`e.g. v1: 62% → v2: 88% (+26% Gain)`), dimension-by-dimension shifts, and newly resolved keywords.
+
 - **Modern UI & UX Enhancements:**
   - **Interactive Drag-and-Drop Dropzone:** Seamless file uploader with glowing drop state, extension badges (PDF, DOCX, TXT), file size display, and clear/replace actions.
   - **Quick Demo Presets:** Pre-loaded sample resumes and job descriptions (*Senior Full-Stack Engineer*, *AI / ML Engineer*) for instant 1-click evaluation without searching for files.
@@ -48,42 +54,47 @@ Powered by native structured JSON output across **Groq**, **Anthropic Claude**, 
 
 ## Tech Stack
 
-- **Frontend:** React 18, Vite 5, Tailwind CSS
+- **Monorepo:** Concurrently, npm workspaces
+- **Frontend:** React 18, Vite 5, Tailwind CSS, LocalStorage Persistence
 - **Backend:** Node.js, Express, Multer
 - **Parsers:** `pdf-parse` (PDF), `mammoth` (DOCX)
 - **AI Providers:** Groq (`llama-3.3-70b-versatile` / `openai/gpt-oss-120b`), Anthropic (`claude-3-5-sonnet`), OpenAI (`gpt-4o-mini`)
 
 ---
 
-## Local Setup
+## Quickstart & Local Setup
 
-### 1. Backend Setup
+### Single-Command Startup (Recommended)
+From the repository root:
 ```bash
-cd ai-resume-analyzer/server
+# 1. Install all dependencies across workspace
+npm run install:all
 npm install
-cp .env.example .env
-```
 
-Configure your preferred LLM provider in `server/.env`:
-```env
-PORT=4000
-LLM_PROVIDER=groq
-GROQ_API_KEY=your_groq_api_key_here
-```
+# 2. Configure server environment
+cp ai-resume-analyzer/server/.env.example ai-resume-analyzer/server/.env
+# Add your GROQ_API_KEY, ANTHROPIC_API_KEY, or OPENAI_API_KEY to server/.env
 
-Start the backend server:
-```bash
+# 3. Boot both Backend and Frontend concurrently
 npm run dev
 ```
 
-### 2. Frontend Setup
-```bash
-cd ai-resume-analyzer/client
-npm install
-npm run dev
-```
+The app will launch at:
+- **Frontend Client:** `http://localhost:5173`
+- **Backend Server:** `http://localhost:4000`
 
-The frontend runs on `http://localhost:5173` and automatically proxies `/api` requests to the Express server on port 4000.
+---
+
+## Available Scripts
+
+| Command | Action |
+| :--- | :--- |
+| `npm run dev` | Boots Express backend (port 4000) and Vite frontend (port 5173) simultaneously |
+| `npm run install:all` | Installs dependencies for both `server` and `client` sub-packages |
+| `npm run dev:server` | Runs the Express server in watch mode |
+| `npm run dev:client` | Runs the Vite client development server |
+| `npm run build` | Builds the client production bundle |
+| `npm run start` | Starts the production Express server |
 
 ---
 
