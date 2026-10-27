@@ -4,6 +4,7 @@ import path from "node:path";
 import { extractResumeText } from "../services/pdfParser.js";
 import { analyzeResume, tailorResume } from "../services/llm.js";
 import { computeSemanticSimilarity } from "../services/semanticEngine.js";
+import { detectAtsTraps } from "../services/atsTrapDetector.js";
 
 const router = Router();
 
@@ -85,6 +86,8 @@ router.post("/analyze", uploadMiddleware, async (req, res) => {
 
     const result = await analyzeResume(fullResumeText, jobDescription.trim());
     const semanticAnalysis = computeSemanticSimilarity(fullResumeText, jobDescription.trim());
+    const atsTraps = detectAtsTraps(fullResumeText);
+
     const hybridScore = Math.max(
       0,
       Math.min(
@@ -97,6 +100,7 @@ router.post("/analyze", uploadMiddleware, async (req, res) => {
       ...result,
       hybrid_score: hybridScore,
       semantic_analysis: semanticAnalysis,
+      ats_traps: atsTraps,
     });
   } catch (err) {
     console.error("Analyze error:", err);
