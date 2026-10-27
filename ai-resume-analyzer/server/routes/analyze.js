@@ -2,7 +2,7 @@ import { Router } from "express";
 import multer from "multer";
 import path from "node:path";
 import { extractResumeText } from "../services/pdfParser.js";
-import { analyzeResume, tailorResume } from "../services/llm.js";
+import { analyzeResume, tailorResume, generateInterviewQuestions } from "../services/llm.js";
 import { computeSemanticSimilarity } from "../services/semanticEngine.js";
 import { detectAtsTraps } from "../services/atsTrapDetector.js";
 
@@ -142,6 +142,44 @@ router.post("/tailor", uploadMiddleware, async (req, res) => {
     console.error("Tailor error:", err);
     return res.status(500).json({
       error: err.message || "Failed to generate tailored resume content. Please try again.",
+    });
+  }
+});
+
+router.post("/interview-prep", uploadMiddleware, async (req, res) => {
+  try {
+    const { jobDescription } = req.body;
+    let { resumeText } = req.body;
+    const file = req.file;
+
+    if (file) {
+      resumeText = await extractResumeText(file.buffer, file.mimetype, file.originalname);
+    }
+
+    if (!resumeText || resumeText.trim().length < 50) {
+      return res.status(400).json({
+        error: "Resume content is missing or too short. Please provide resume text or upload a document.",
+      });
+    }
+
+    if (!jobDescription || jobDescription.trim().length < 20) {
+      return res.status(400).json({
+        error: "Job description is missing or too short (minimum 20 characters required).",
+      });
+    }
+
+    const MAX_RESUME_CHARS = 30000;
+    const safeResumeText =
+      resumeText.length > MAX_RESUME_CHARS
+        ? resumeText.slice(0, MAX_RESUME_CHARS)
+        : resumeText;
+
+    const result = await generateInterviewQuestions(safeResumeText, jobDescription.trim());
+    return res.json(result);
+  } catch (err) {
+    console.error("Interview prep error:", err);
+    return res.status(500).json({
+      error: err.message || "Failed to generate interview prep questions. Please try again.",
     });
   }
 });

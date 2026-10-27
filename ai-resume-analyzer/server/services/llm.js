@@ -1,5 +1,6 @@
 import { buildAnalyzePrompt } from "../prompts/analyzePrompt.js";
 import { buildTailorPrompt } from "../prompts/tailorPrompt.js";
+import { buildInterviewPrompt } from "../prompts/interviewPrompt.js";
 
 const SYSTEM_INSTRUCTION =
   "You are an expert ATS (Applicant Tracking System) and senior technical recruiter. You evaluate resumes with rigorous objectivity. You must output strictly valid JSON conforming to the requested schema. Never wrap response in markdown code blocks or add conversational preamble.";
@@ -358,6 +359,60 @@ export async function tailorResume(resumeText, jdText) {
       );
     } catch (retryError) {
       throw new Error(`Failed to generate tailored resume content: ${retryError.message}`);
+    }
+  }
+}
+
+/**
+ * Generates Top 5 targeted technical & behavioral interview questions with STAR answers.
+ */
+export async function generateInterviewQuestions(resumeText, jdText) {
+  const basePrompt = buildInterviewPrompt(resumeText, jdText);
+
+  const attempt = async (extraInstruction = "") => {
+    const rawText = await callStructuredLLM(
+      basePrompt + extraInstruction,
+      "You are an expert technical interviewer and hiring manager. Output strictly valid JSON."
+    );
+    const cleaned = cleanJsonResponse(rawText);
+    const parsed = JSON.parse(cleaned);
+
+    const questions = Array.isArray(parsed.questions)
+      ? parsed.questions.map((q, idx) => ({
+          id: q?.id ?? idx + 1,
+          type: q?.type === "behavioral" ? "behavioral" : "technical",
+          target_competency: String(q?.target_competency || "Core Competency"),
+          question: String(q?.question || "Targeted Interview Question"),
+          why_asked: String(q?.why_asked || "Evaluates candidate suitability and problem-solving approach."),
+          model_answer: {
+            situation: String(q?.model_answer?.situation || ""),
+            task: String(q?.model_answer?.task || ""),
+            action: String(q?.model_answer?.action || ""),
+            result: String(q?.model_answer?.result || ""),
+          },
+          interviewer_checklist: Array.isArray(q?.interviewer_checklist)
+            ? q.interviewer_checklist.map(String)
+            : [],
+        }))
+      : [];
+
+    return {
+      role_title: String(parsed.role_title || "Target Role"),
+      prep_strategy: String(parsed.prep_strategy || "Focus on concrete architecture tradeoffs and STAR-formatted metrics."),
+      questions,
+    };
+  };
+
+  try {
+    return await attempt();
+  } catch (initialError) {
+    console.warn("Interview prep attempt failed, retrying:", initialError.message);
+    try {
+      return await attempt(
+        "\n\nCRITICAL: Respond with ONLY a single raw JSON object matching the requested schema. No markdown fences, no explanatory text."
+      );
+    } catch (retryError) {
+      throw new Error(`Failed to generate interview prep questions: ${retryError.message}`);
     }
   }
 }
