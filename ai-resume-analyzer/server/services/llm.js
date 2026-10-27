@@ -1,6 +1,7 @@
 import { buildAnalyzePrompt } from "../prompts/analyzePrompt.js";
 import { buildTailorPrompt } from "../prompts/tailorPrompt.js";
 import { buildInterviewPrompt } from "../prompts/interviewPrompt.js";
+import { buildCoverLetterPrompt } from "../prompts/coverLetterPrompt.js";
 
 const SYSTEM_INSTRUCTION =
   "You are an expert ATS (Applicant Tracking System) and senior technical recruiter. You evaluate resumes with rigorous objectivity. You must output strictly valid JSON conforming to the requested schema. Never wrap response in markdown code blocks or add conversational preamble.";
@@ -413,6 +414,68 @@ export async function generateInterviewQuestions(resumeText, jdText) {
       );
     } catch (retryError) {
       throw new Error(`Failed to generate interview prep questions: ${retryError.message}`);
+    }
+  }
+}
+
+/**
+ * Generates a targeted, high-converting 3-paragraph cover letter tailored to the job description.
+ */
+export async function generateCoverLetter(resumeText, jdText) {
+  const basePrompt = buildCoverLetterPrompt(resumeText, jdText);
+
+  const attempt = async (extraInstruction = "") => {
+    const rawText = await callStructuredLLM(
+      basePrompt + extraInstruction,
+      "You are an executive cover letter writer and technical recruiter. Output strictly valid JSON."
+    );
+    const cleaned = cleanJsonResponse(rawText);
+    const parsed = JSON.parse(cleaned);
+
+    const fullLetter = parsed.full_letter
+      ? String(parsed.full_letter).trim()
+      : [
+          parsed.salutation || "Dear Hiring Team,",
+          "",
+          parsed.paragraph_hook || "",
+          "",
+          parsed.paragraph_body || "",
+          "",
+          parsed.paragraph_close || "",
+          "",
+          parsed.sign_off || "Sincerely,\nCandidate",
+        ]
+          .filter((line, i, arr) => line !== "" || (i > 0 && arr[i - 1] !== ""))
+          .join("\n");
+
+    return {
+      candidate_name: String(parsed.candidate_name || "Applicant"),
+      target_role: String(parsed.target_role || "Target Role"),
+      company_name: String(parsed.company_name || "Hiring Team"),
+      subject_line: String(parsed.subject_line || "Job Application"),
+      salutation: String(parsed.salutation || "Dear Hiring Team,"),
+      paragraph_hook: String(parsed.paragraph_hook || ""),
+      paragraph_body: String(parsed.paragraph_body || ""),
+      paragraph_close: String(parsed.paragraph_close || ""),
+      sign_off: String(parsed.sign_off || "Sincerely,\nCandidate"),
+      full_letter: fullLetter,
+      highlight_bullets: Array.isArray(parsed.highlight_bullets)
+        ? parsed.highlight_bullets.map(String)
+        : [],
+      tone_strategy: String(parsed.tone_strategy || "High-converting, metric-driven positioning."),
+    };
+  };
+
+  try {
+    return await attempt();
+  } catch (initialError) {
+    console.warn("Cover letter attempt failed, retrying:", initialError.message);
+    try {
+      return await attempt(
+        "\n\nCRITICAL: Respond with ONLY a single raw JSON object matching the requested schema. No markdown fences, no explanatory text."
+      );
+    } catch (retryError) {
+      throw new Error(`Failed to generate tailored cover letter: ${retryError.message}`);
     }
   }
 }
