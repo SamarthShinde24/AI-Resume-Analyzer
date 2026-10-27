@@ -10,6 +10,9 @@ import Toast from "./components/Toast.jsx";
 import ExportModal from "./components/ExportModal.jsx";
 import VersionHistory from "./components/VersionHistory.jsx";
 import VersionCompareModal from "./components/VersionCompareModal.jsx";
+import AtsTrapDetector from "./components/AtsTrapDetector.jsx";
+import InterviewPrep from "./components/InterviewPrep.jsx";
+import CoverLetterModal from "./components/CoverLetterModal.jsx";
 import { analyzeResume } from "./api.js";
 import { getHistory, saveAnalysis, extractRoleTitle } from "./services/historyService.js";
 
@@ -25,6 +28,7 @@ export default function App() {
   const [activeVersionLabel, setActiveVersionLabel] = useState(null);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isCoverLetterOpen, setIsCoverLetterOpen] = useState(false);
   const [compareVersions, setCompareVersions] = useState(null);
 
   const showToast = (message) => {
@@ -132,6 +136,14 @@ export default function App() {
               <>
                 <button
                   type="button"
+                  onClick={() => setIsCoverLetterOpen(true)}
+                  className="text-xs font-semibold text-slate-700 hover:text-indigo-600 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:border-indigo-300 transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                >
+                  <span>✉️ Cover Letter</span>
+                </button>
+
+                <button
+                  type="button"
                   onClick={() => setIsExportOpen(true)}
                   className="text-xs font-bold text-indigo-700 hover:text-indigo-900 px-3 py-1.5 rounded-lg border border-indigo-200 bg-indigo-50/80 hover:bg-indigo-100 transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
                 >
@@ -205,6 +217,22 @@ export default function App() {
               </button>
               <button
                 type="button"
+                onClick={() => setActiveTab("traps")}
+                className={`px-4 py-2.5 text-xs font-bold rounded-lg transition whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                  activeTab === "traps"
+                    ? "bg-indigo-50 text-indigo-700 border-b-2 border-indigo-600"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                }`}
+              >
+                <span>🚨 ATS Traps</span>
+                {result.ats_traps?.total_traps_found > 0 && (
+                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-rose-100 text-rose-700">
+                    {result.ats_traps.total_traps_found}
+                  </span>
+                )}
+              </button>
+              <button
+                type="button"
                 onClick={() => setActiveTab("keywords")}
                 className={`px-4 py-2.5 text-xs font-bold rounded-lg transition whitespace-nowrap cursor-pointer ${
                   activeTab === "keywords"
@@ -230,14 +258,14 @@ export default function App() {
               </button>
               <button
                 type="button"
-                onClick={() => setActiveTab("audit")}
+                onClick={() => setActiveTab("interview")}
                 className={`px-4 py-2.5 text-xs font-bold rounded-lg transition whitespace-nowrap cursor-pointer ${
-                  activeTab === "audit"
+                  activeTab === "interview"
                     ? "bg-indigo-50 text-indigo-700 border-b-2 border-indigo-600"
                     : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                 }`}
               >
-                📑 Full Audit Report
+                🎯 Interview Prep (STAR)
               </button>
               <button
                 type="button"
@@ -250,6 +278,17 @@ export default function App() {
               >
                 ✨ Tailor My Resume
               </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("audit")}
+                className={`px-4 py-2.5 text-xs font-bold rounded-lg transition whitespace-nowrap cursor-pointer ${
+                  activeTab === "audit"
+                    ? "bg-indigo-50 text-indigo-700 border-b-2 border-indigo-600"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                }`}
+              >
+                📑 Full Audit Report
+              </button>
             </div>
 
             {/* Tab Contents */}
@@ -259,6 +298,15 @@ export default function App() {
                   score={result.match_score}
                   summary={result.summary}
                   breakdown={result.score_breakdown}
+                  hybridScore={result.hybrid_score}
+                  semanticAnalysis={result.semantic_analysis}
+                />
+              )}
+
+              {activeTab === "traps" && (
+                <AtsTrapDetector
+                  trapsData={result.ats_traps}
+                  onToast={showToast}
                 />
               )}
 
@@ -277,13 +325,11 @@ export default function App() {
                 />
               )}
 
-              {activeTab === "audit" && (
-                <FullAudit
-                  score={result.match_score}
-                  breakdown={result.score_breakdown}
-                  summary={result.summary}
-                  checklist={result.keyword_checklist}
-                  weakBullets={result.weak_bullets}
+              {activeTab === "interview" && (
+                <InterviewPrep
+                  file={currentFile}
+                  jobDescription={currentJd}
+                  onToast={showToast}
                 />
               )}
 
@@ -292,6 +338,16 @@ export default function App() {
                   file={currentFile}
                   jobDescription={currentJd}
                   onToast={showToast}
+                />
+              )}
+
+              {activeTab === "audit" && (
+                <FullAudit
+                  score={result.match_score}
+                  breakdown={result.score_breakdown}
+                  summary={result.summary}
+                  checklist={result.keyword_checklist}
+                  weakBullets={result.weak_bullets}
                 />
               )}
             </div>
@@ -308,6 +364,15 @@ export default function App() {
           fileName: currentFile?.name,
           roleTitle: extractRoleTitle(currentJd),
         }}
+        onToast={showToast}
+      />
+
+      {/* Cover Letter Modal */}
+      <CoverLetterModal
+        isOpen={isCoverLetterOpen}
+        onClose={() => setIsCoverLetterOpen(false)}
+        file={currentFile}
+        jobDescription={currentJd}
         onToast={showToast}
       />
 

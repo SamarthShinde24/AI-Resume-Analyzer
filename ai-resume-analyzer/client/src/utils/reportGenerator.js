@@ -28,13 +28,20 @@ export function generateMarkdownReport(result, meta = {}) {
   const missingSkills = result.missing_skills || [];
   const checklist = result.keyword_checklist || [];
   const weakBullets = result.weak_bullets || [];
+  const semantic = result.semantic_analysis;
+  const atsTraps = result.ats_traps;
+  const hybridScore = result.hybrid_score;
 
   return `# ATS Resume & Interview-Prep Audit Sheet
 
 > **Generated on:** ${dateStr}  
 > **Resume Document:** \`${fileName}\`  
 > **Target Position:** ${roleTitle}  
-> **Overall ATS Alignment Score:** **${score} / 100** — *${getVerdictLabel(score)}*
+> **Overall ATS Alignment Score:** **${score} / 100** — *${getVerdictLabel(score)}*${
+  hybridScore
+    ? `  \n> **Hybrid AI Score (65% LLM + 35% Deterministic Vector):** **${hybridScore} / 100**`
+    : ""
+}
 
 ---
 
@@ -100,7 +107,32 @@ ${
 
 ---
 
-## 5. Candidate Pre-Interview Checklist
+${
+  atsTraps
+    ? `## 5. ATS Parseability & "Red Flag" Diagnostics
+
+- **Parseability Health Score:** ${atsTraps.ats_health_score} / 100
+- **Total Traps Found:** ${atsTraps.total_traps_found}
+- **Pronouns Detected:** ${atsTraps.pronoun_audit?.count ?? 0}
+- **Passive Clichés Detected:** ${atsTraps.buzzword_audit?.count ?? 0}
+
+### Identified Rejection Traps & Recommended Fixes:
+${
+  atsTraps.traps?.length > 0
+    ? atsTraps.traps
+        .map(
+          (t) =>
+            `- [${t.severity.toUpperCase()}] **${t.title}** (${t.category})\n  - *Detail:* ${t.detail}\n  - *Action:* ${t.recommendation}`
+        )
+        .join("\n\n")
+    : "*Clean ATS structure without parsing traps.*"
+}
+
+---
+`
+    : ""
+}
+## 6. Candidate Pre-Interview Checklist
 
 - [ ] Incorporate missing core required keywords naturally into your technical skills summary.
 - [ ] Update flagged bullet points with quantified scale, metrics, or dollar impact.

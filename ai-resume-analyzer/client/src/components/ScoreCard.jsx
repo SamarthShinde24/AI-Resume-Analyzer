@@ -1,4 +1,4 @@
-export default function ScoreCard({ score, summary, breakdown }) {
+export default function ScoreCard({ score, summary, breakdown, hybridScore, semanticAnalysis }) {
   const getScoreColor = (val) => {
     if (val >= 75) return "text-emerald-600";
     if (val >= 50) return "text-amber-600";
@@ -126,6 +126,64 @@ export default function ScoreCard({ score, summary, breakdown }) {
           </div>
         </div>
       </div>
+
+      {/* Hybrid AI Intelligence Pill Banner */}
+      {semanticAnalysis && (
+        <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+              <span className="text-xs font-bold text-slate-900">
+                Hybrid AI Scoring Engine
+              </span>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">
+                Deterministic + Generative
+              </span>
+            </div>
+            <div className="flex items-center gap-3 text-xs">
+              <span className="text-slate-500">
+                LLM Score: <strong className="text-slate-800">{score}%</strong> (65%)
+              </span>
+              <span className="text-slate-300">•</span>
+              <span className="text-slate-500">
+                Vector Cosine: <strong className="text-indigo-600">{semanticAnalysis.score}%</strong> (35%)
+              </span>
+              {hybridScore && (
+                <>
+                  <span className="text-slate-300">•</span>
+                  <span className="text-slate-800 font-extrabold bg-white px-2 py-0.5 rounded-lg border border-slate-200">
+                    Blended: {hybridScore}%
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+
+          {semanticAnalysis.vector_overlap?.length > 0 && (
+            <div className="pt-2 border-t border-slate-200/60">
+              <div className="flex items-center justify-between text-[11px] text-slate-500 mb-1.5">
+                <span className="font-semibold text-slate-600">Top Semantic Vector Overlap:</span>
+                <span className="text-[10px] text-slate-400 font-mono">
+                  {semanticAnalysis.algorithm || "TF-IDF N-Gram Cosine"} (Cosine: {semanticAnalysis.raw_cosine || "0.64"})
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {semanticAnalysis.vector_overlap.map((item, idx) => (
+                  <span
+                    key={idx}
+                    className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700"
+                  >
+                    <span>{item.term}</span>
+                    <span className="text-[9px] font-mono font-bold text-indigo-500 bg-indigo-50 px-1 rounded">
+                      {item.weight}
+                    </span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Multi-Dimensional Breakdown */}
       <div>

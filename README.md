@@ -8,6 +8,12 @@ Powered by native structured JSON output across **Groq**, **Anthropic Claude**, 
 
 ## Key Features
 
+- **Next-Gen AI & ATS Intelligence (Deep Tech):**
+  - **Deterministic Semantic Embedding Vector Cosine (Hybrid AI):** Combines an N-gram TF-IDF vectorizer and Cosine Similarity metric to compute a mathematically deterministic baseline compatibility score (`0.65 * LLM + 0.35 * Vector Cosine`), eliminating LLM score variance and displaying top overlapping vector tokens.
+  - **ATS "Red Flag" & Parseability Trap Detector:** Scans for fatal ATS parser failure points: missing standard section headers (*Experience*, *Education*, *Skills*), first-person pronoun overuse (*"I"*, *"my"*, *"we"*), passive clichés (*"responsible for"*, *"team player"*), and contact integrity checks (email, phone, LinkedIn/GitHub URLs).
+  - **AI Behavioral & Technical Interview Coach (STAR Method):** Generates the Top 5 role-specific interview questions tailored to the candidate's exact skill gaps, with model answers structured strictly in **S**ituation, **T**ask, **A**ction, and **R**esult, accompanied by interviewer evaluation checklists.
+  - **Tailored Cover Letter Generator (`/api/cover-letter`):** Instant 1-click generation of high-converting, metric-driven 3-paragraph executive cover letters matched to company pain points, downloadable as `.md` or copied to clipboard.
+
 - **Advanced Portfolio Features:**
   - **Single-Command Monorepo Setup:** Boot both backend and frontend concurrently with a single `npm run dev` from the repository root.
   - **PDF & Markdown Report Export:** Download complete interview-prep audit sheets in GitHub-flavored Markdown (`.md`) or print-optimized PDF with custom page-break formatting.

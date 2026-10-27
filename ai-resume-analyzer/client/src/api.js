@@ -58,3 +58,45 @@ export async function tailorResume({ file, jobDescription, resumeText }) {
 
   return parseApiResponse(res, "Failed to generate tailored resume.");
 }
+
+export async function generateInterviewPrep({ file, jobDescription, resumeText }) {
+  let res;
+  if (file) {
+    const formData = new FormData();
+    formData.append("resume", file);
+    formData.append("jobDescription", jobDescription);
+    res = await fetch("/api/interview-prep", {
+      method: "POST",
+      body: formData,
+    });
+  } else {
+    res = await fetch("/api/interview-prep", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jobDescription, resumeText }),
+    });
+  }
+
+  return parseApiResponse(res, "Failed to generate interview prep questions.");
+}
+
+export async function generateCoverLetter({ file, jobDescription, resumeText }) {
+  let res;
+  if (file) {
+    const formData = new FormData();
+    formData.append("resume", file);
+    formData.append("jobDescription", jobDescription);
+    res = await fetch("/api/cover-letter", {
+      method: "POST",
+      body: formData,
+    });
+  } else {
+    res = await fetch("/api/cover-letter", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jobDescription, resumeText }),
+    });
+  }
+
+  return parseApiResponse(res, "Failed to generate tailored cover letter.");
+}
