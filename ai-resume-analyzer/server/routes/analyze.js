@@ -3,6 +3,7 @@ import multer from "multer";
 import path from "node:path";
 import { extractResumeText } from "../services/pdfParser.js";
 import { analyzeResume, tailorResume } from "../services/llm.js";
+import { computeSemanticSimilarity } from "../services/semanticEngine.js";
 
 const router = Router();
 
@@ -83,7 +84,20 @@ router.post("/analyze", uploadMiddleware, async (req, res) => {
         : resumeText;
 
     const result = await analyzeResume(fullResumeText, jobDescription.trim());
-    return res.json(result);
+    const semanticAnalysis = computeSemanticSimilarity(fullResumeText, jobDescription.trim());
+    const hybridScore = Math.max(
+      0,
+      Math.min(
+        100,
+        Math.round(0.65 * (result.match_score || 50) + 0.35 * (semanticAnalysis.score || 50))
+      )
+    );
+
+    return res.json({
+      ...result,
+      hybrid_score: hybridScore,
+      semantic_analysis: semanticAnalysis,
+    });
   } catch (err) {
     console.error("Analyze error:", err);
     return res.status(500).json({ error: err.message || "Analysis failed. Please try again." });
