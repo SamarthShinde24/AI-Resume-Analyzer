@@ -8,6 +8,14 @@ Powered by native structured JSON output across **Groq**, **Anthropic Claude**, 
 
 ## Key Features
 
+- **Live In-Browser Resume Editor & Document Export (New):**
+  - **Live In-Browser Split-Screen Resume Editor:** Edit resume text directly in a split-screen editor without manual local file editing and re-uploading.
+  - **Real-Time Keyword Gap Lighting:** Missing skills light up in vibrant emerald green with an animated `+Boost` badge the exact second they are typed into the editor.
+  - **Instant Re-Scoring Engine (`/api/rescore-live`):** Zero-latency local regex matching blended with debounced TF-IDF vector cosine calculations and ATS parseability health diagnostics.
+  - **1-Click "Apply All AI Rewrites":** Automatically locates weak bullet points within the resume text and replaces them with their AI-optimized, metric-driven rewrites.
+  - **One-Click "Download Tailored Resume" (.docx / .pdf):** Word document generation engine (`docx`) outputting ATS-compliant `.docx` files with 1-inch margins, executive typography, section dividers, and clean bullet formatting, plus browser print-to-PDF support.
+  - **Job Posting URL Web Scraper (`/api/scrape-job`):** Paste any public job posting URL (Greenhouse, Lever, Workday, Indeed, LinkedIn, or generic career pages) to automatically fetch, sanitize, and populate the job description with company metadata.
+
 - **Next-Gen AI & ATS Intelligence (Deep Tech):**
   - **Deterministic Semantic Embedding Vector Cosine (Hybrid AI):** Combines an N-gram TF-IDF vectorizer and Cosine Similarity metric to compute a mathematically deterministic baseline compatibility score (`0.65 * LLM + 0.35 * Vector Cosine`), eliminating LLM score variance and displaying top overlapping vector tokens.
   - **ATS "Red Flag" & Parseability Trap Detector:** Scans for fatal ATS parser failure points: missing standard section headers (*Experience*, *Education*, *Skills*), first-person pronoun overuse (*"I"*, *"my"*, *"we"*), passive clichés (*"responsible for"*, *"team player"*), and contact integrity checks (email, phone, LinkedIn/GitHub URLs).
@@ -63,7 +71,7 @@ Powered by native structured JSON output across **Groq**, **Anthropic Claude**, 
 - **Monorepo:** Concurrently, npm workspaces
 - **Frontend:** React 18, Vite 5, Tailwind CSS, LocalStorage Persistence
 - **Backend:** Node.js, Express, Multer
-- **Parsers:** `pdf-parse` (PDF), `mammoth` (DOCX)
+- **Parsers & Scrapers:** `pdf-parse` (PDF), `mammoth` (DOCX), `cheerio` (Job URL Web Scraper), `docx` (Word Document Generation Engine)
 - **AI Providers:** Groq (`llama-3.3-70b-versatile` / `openai/gpt-oss-120b`), Anthropic (`claude-3-5-sonnet`), OpenAI (`gpt-4o-mini`)
 
 ---
@@ -139,15 +147,31 @@ Returns:
 }
 ```
 
-### `POST /api/tailor`
-Accepts `multipart/form-data` or JSON `{ resumeText, jobDescription }`.
+### `POST /api/scrape-job`
+Accepts JSON `{ url: "https://boards.greenhouse.io/company/jobs/123" }`.
 Returns:
 ```json
 {
-  "ats_headline": "Senior Full-Stack Engineer | Distributed Systems & Cloud Architecture",
-  "tailored_summary": "Results-driven Senior Full-Stack Engineer with 5+ years building scalable distributed services...",
-  "core_competencies": ["Node.js", "React", "TypeScript", "AWS", "Microservices"],
-  "tailored_bullets": [ ... ],
-  "tailoring_strategy": "Highlights distributed systems latency optimizations to directly align with the core JD requirements."
+  "title": "Senior Backend Engineer",
+  "company": "Acme Corp",
+  "description": "We are seeking a Senior Backend Engineer proficient in Node.js, distributed databases...",
+  "url": "https://boards.greenhouse.io/company/jobs/123"
+}
+```
+
+### `POST /api/export-docx`
+Accepts JSON `{ resumeText, weakBullets, candidateName, autoApplyRewrites }`.
+Returns binary Microsoft Word document with `Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document` with all weak bullets automatically substituted with their AI rewrites.
+
+### `POST /api/rescore-live`
+Accepts JSON `{ resumeText, jobDescription, originalChecklist, baseScore }`.
+Returns sub-10ms deterministic live re-score, vector cosine distance, and real-time keyword lighting states:
+```json
+{
+  "live_score": 88,
+  "previous_score": 75,
+  "score_delta": 13,
+  "checklist": [ ... ],
+  "newly_resolved": ["Kubernetes", "GraphQL"]
 }
 ```
