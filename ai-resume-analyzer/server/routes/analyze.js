@@ -283,4 +283,90 @@ router.post("/export-docx", async (req, res) => {
   }
 });
 
+router.post("/rescore-live", async (req, res) => {
+  try {
+    const { resumeText, jobDescription, originalChecklist, baseScore } = req.body;
+    if (!resumeText || typeof resumeText !== "string" || resumeText.trim().length < 20) {
+      return res.status(400).json({ error: "Resume text is missing or too short." });
+    }
+
+    const jd = typeof jobDescription === "string" ? jobDescription.trim() : "";
+    const checklist = Array.isArray(originalChecklist) ? originalChecklist : [];
+    const initialBaseScore = Number.isFinite(Number(baseScore)) ? Number(baseScore) : 60;
+
+    // 1. Deterministic Semantic Vector Cosine
+    const semanticAnalysis =
+      jd.length > 20
+        ? computeSemanticSimilarity(resumeText, jd)
+        : { score: initialBaseScore, vector_overlap: [], algorithm: "TF-IDF Vector Cosine" };
+
+    // 2. ATS Trap Detector
+    const atsTraps = detectAtsTraps(resumeText);
+
+    // 3. Keyword Match Tracking
+    const lowerText = resumeText.toLowerCase();
+    const updatedChecklist = [];
+    const newlyResolved = [];
+    let matchedCount = 0;
+    let missingCount = 0;
+
+    for (const item of checklist) {
+      if (!item?.skill) continue;
+      const skillLower = item.skill.toLowerCase().trim();
+      const escaped = skillLower.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const isPresent =
+        new RegExp(`(?:^|[^a-z0-9])${escaped}(?:$|[^a-z0-9])`, "i").test(lowerText) ||
+        lowerText.includes(skillLower);
+
+      const wasMissing = item.status === "missing";
+      const isNowMatched = isPresent;
+
+      if (isNowMatched && wasMissing) {
+        newlyResolved.push(item.skill);
+      }
+
+      if (isNowMatched) matchedCount++;
+      else missingCount++;
+
+      updatedChecklist.push({
+        ...item,
+        status: isNowMatched ? "matched" : "missing",
+        newly_resolved: isNowMatched && wasMissing,
+      });
+    }
+
+    // 4. Compute Dynamic Live Score (Coverage 45% + Vector Cosine 35% + ATS Health 20%)
+    const totalKeywords = matchedCount + missingCount;
+    const keywordCoverage =
+      totalKeywords > 0 ? (matchedCount / totalKeywords) * 100 : initialBaseScore;
+
+    const liveScore = Math.min(
+      100,
+      Math.max(
+        15,
+        Math.round(
+          0.45 * keywordCoverage +
+            0.35 * (semanticAnalysis.score || initialBaseScore) +
+            0.20 * (atsTraps.ats_health_score || 80)
+        )
+      )
+    );
+
+    return res.json({
+      live_score: liveScore,
+      previous_score: initialBaseScore,
+      score_delta: liveScore - initialBaseScore,
+      semantic_analysis: semanticAnalysis,
+      ats_traps: atsTraps,
+      checklist: updatedChecklist,
+      newly_resolved: newlyResolved,
+      total_matched: matchedCount,
+      total_missing: missingCount,
+    });
+  } catch (err) {
+    console.error("Rescore live error:", err);
+    return res.status(500).json({ error: err.message || "Failed to re-score resume text." });
+  }
+});
+
 export default router;
