@@ -1,0 +1,19 @@
+{
+  "scheduled_for": "2026-10-29",
+  "timezone": "IST (Asia/Kolkata)",
+  "last_run": null,
+  "tasks": [
+    {
+      "id": "task-001",
+      "name": "Audit Sample Presets",
+      "description": "Evaluates candidate sample presets with deterministic semantic vector engine and ATS trap diagnostics.",
+      "status": "pending"
+    },
+    {
+      "id": "task-002",
+      "name": "System Health & Benchmark Report",
+      "description": "Compiles benchmark results and updates reports/scheduled-audit-log.md.",
+      "status": "pending"
+    }
+  ]
+}

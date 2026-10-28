@@ -2,6 +2,7 @@
   "name": "ai-resume-analyzer-workspace",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "AI Resume & ATS Analyzer workspace with single-command development startup",
   "scripts": {
     "dev": "concurrently -n \"server,client\" -c \"blue,green\" \"npm --prefix ai-resume-analyzer/server run dev\" \"npm --prefix ai-resume-analyzer/client run dev\"",
@@ -10,7 +11,8 @@
     "install:all": "npm --prefix ai-resume-analyzer/server install && npm --prefix ai-resume-analyzer/client install",
     "build:client": "npm --prefix ai-resume-analyzer/client run build",
     "build": "npm run build:client",
-    "start": "node ai-resume-analyzer/server/index.js"
+    "start": "node ai-resume-analyzer/server/index.js",
+    "run:tasks": "node scripts/scheduled-tasks.js"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

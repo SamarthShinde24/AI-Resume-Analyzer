@@ -1,0 +1,58 @@
+name: Scheduled Cloud Tasks & Automated Commit Worker
+
+on:
+  # Daily scheduled execution at 04:30 UTC = 10:00 AM IST
+  schedule:
+    - cron: '30 4 * * *'
+
+  # Allows manual 1-click execution anytime from GitHub web / mobile UI
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for manual task execution'
+        required: false
+        default: 'Manual on-demand cloud task trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  run-scheduled-tasks:
+    name: Execute Scheduled Tasks & Commit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies across workspace
+        run: |
+          npm install
+          npm run install:all
+
+      - name: Verify build integrity
+        run: npm run build
+
+      - name: Execute scheduled task queue
+        run: npm run run:tasks
+
+      - name: Commit and push automated updates
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add tasks/ reports/
+          if git diff --staged --quiet; then
+            echo "No task report changes to commit."
+          else
+            git commit -m "chore(automated): execute scheduled cloud tasks and update audit log [skip ci]"
+            git push origin main
+          fi

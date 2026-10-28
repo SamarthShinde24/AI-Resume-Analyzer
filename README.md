@@ -8,6 +8,11 @@ Powered by native structured JSON output across **Groq**, **Anthropic Claude**, 
 
 ## Key Features
 
+- **24/7 Cloud Automation & Scheduled Commit Worker (New):**
+  - **Runs Even When Your Laptop Is Off:** Powered by GitHub Actions cloud runners (`.github/workflows/scheduled-tasks.yml`) executing on a schedule (10:00 AM IST daily) or on-demand via `workflow_dispatch`.
+  - **Automated Task Queue (`tasks/queue.json`):** Queue tasks (sample audits, health checks, benchmark generation) that run in GitHub's cloud and automatically commit verified reports back to `main`.
+  - **Automated Cloud Audit Log (`reports/scheduled-audit-log.md`):** Keeps an autonomous record of daily ATS evaluations, semantic score drifts, and system diagnostics.
+
 - **Live In-Browser Resume Editor & Document Export (New):**
   - **Live In-Browser Split-Screen Resume Editor:** Edit resume text directly in a split-screen editor without manual local file editing and re-uploading.
   - **Real-Time Keyword Gap Lighting:** Missing skills light up in vibrant emerald green with an animated `+Boost` badge the exact second they are typed into the editor.
