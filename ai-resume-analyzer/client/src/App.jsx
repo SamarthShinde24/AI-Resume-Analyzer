@@ -13,6 +13,7 @@ import VersionCompareModal from "./components/VersionCompareModal.jsx";
 import AtsTrapDetector from "./components/AtsTrapDetector.jsx";
 import InterviewPrep from "./components/InterviewPrep.jsx";
 import CoverLetterModal from "./components/CoverLetterModal.jsx";
+import TailoredResumeExportModal from "./components/TailoredResumeExportModal.jsx";
 import { analyzeResume } from "./api.js";
 import { getHistory, saveAnalysis, extractRoleTitle } from "./services/historyService.js";
 
@@ -29,6 +30,7 @@ export default function App() {
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isCoverLetterOpen, setIsCoverLetterOpen] = useState(false);
+  const [isTailoredDocxOpen, setIsTailoredDocxOpen] = useState(false);
   const [compareVersions, setCompareVersions] = useState(null);
 
   const showToast = (message) => {
@@ -134,6 +136,14 @@ export default function App() {
 
             {result && (
               <>
+                <button
+                  type="button"
+                  onClick={() => setIsTailoredDocxOpen(true)}
+                  className="text-xs font-bold text-emerald-700 hover:text-emerald-900 px-3 py-1.5 rounded-lg border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                >
+                  <span>📄 Tailored Docx</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => setIsCoverLetterOpen(true)}
@@ -373,6 +383,16 @@ export default function App() {
         onClose={() => setIsCoverLetterOpen(false)}
         file={currentFile}
         jobDescription={currentJd}
+        onToast={showToast}
+      />
+
+      {/* Tailored Resume DOCX & PDF Export Modal */}
+      <TailoredResumeExportModal
+        isOpen={isTailoredDocxOpen}
+        onClose={() => setIsTailoredDocxOpen(false)}
+        resumeText={result?.resume_text || ""}
+        weakBullets={result?.weak_bullets || []}
+        candidateName={currentFile?.name ? currentFile.name.replace(/\.[^/.]+$/, "") : "Candidate"}
         onToast={showToast}
       />
 

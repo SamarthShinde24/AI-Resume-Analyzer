@@ -109,3 +109,37 @@ export async function scrapeJobUrl(url) {
   });
   return parseApiResponse(res, "Failed to scrape job description from URL.");
 }
+
+export async function downloadTailoredDocx({
+  resumeText,
+  weakBullets = [],
+  candidateName = "Candidate",
+  autoApplyRewrites = true,
+}) {
+  const res = await fetch("/api/export-docx", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      resumeText,
+      weakBullets,
+      candidateName,
+      autoApplyRewrites,
+    }),
+  });
+
+  if (!res.ok) {
+    const errorJson = await res.json().catch(() => null);
+    throw new Error(errorJson?.error || `Failed to download DOCX (Status ${res.status})`);
+  }
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  const cleanName = candidateName.replace(/[^a-zA-Z0-9_-]/g, "_") || "Tailored_Resume";
+  a.download = `${cleanName}_Tailored_Resume.docx`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
