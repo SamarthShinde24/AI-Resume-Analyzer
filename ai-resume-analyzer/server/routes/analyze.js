@@ -10,6 +10,7 @@ import {
 } from "../services/llm.js";
 import { computeSemanticSimilarity } from "../services/semanticEngine.js";
 import { detectAtsTraps } from "../services/atsTrapDetector.js";
+import { scrapeJobPosting } from "../services/jobScraper.js";
 
 const router = Router();
 
@@ -223,6 +224,27 @@ router.post("/cover-letter", uploadMiddleware, async (req, res) => {
     console.error("Cover letter error:", err);
     return res.status(500).json({
       error: err.message || "Failed to generate tailored cover letter. Please try again.",
+    });
+  }
+});
+
+router.post("/scrape-job", async (req, res) => {
+  try {
+    const { url } = req.body;
+    if (!url || typeof url !== "string" || url.trim().length === 0) {
+      return res.status(400).json({ error: "Job posting URL is required." });
+    }
+
+    const scraped = await scrapeJobPosting(url.trim());
+    return res.json(scraped);
+  } catch (err) {
+    console.error("Scrape job error:", err);
+    const isClientError =
+      err.message.includes("Invalid URL") ||
+      err.message.includes("Could not extract") ||
+      err.message.includes("HTTP and HTTPS");
+    return res.status(isClientError ? 422 : 500).json({
+      error: err.message || "Failed to scrape job description from the provided URL.",
     });
   }
 });
