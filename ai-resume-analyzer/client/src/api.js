@@ -100,3 +100,12 @@ export async function generateCoverLetter({ file, jobDescription, resumeText }) 
 
   return parseApiResponse(res, "Failed to generate tailored cover letter.");
 }
+
+export async function scrapeJobUrl(url) {
+  const res = await fetch("/api/scrape-job", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url }),
+  });
+  return parseApiResponse(res, "Failed to scrape job description from URL.");
+}

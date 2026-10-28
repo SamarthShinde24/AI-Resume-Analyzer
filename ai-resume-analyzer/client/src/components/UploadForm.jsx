@@ -1,11 +1,16 @@
 import { useState, useRef } from "react";
 import { SAMPLE_PRESETS } from "../data/samplePresets.js";
+import { scrapeJobUrl } from "../api.js";
 
 export default function UploadForm({ onSubmit, loading }) {
   const [file, setFile] = useState(null);
   const [jobDescription, setJobDescription] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [fileError, setFileError] = useState(null);
+  const [jobUrl, setJobUrl] = useState("");
+  const [urlLoading, setUrlLoading] = useState(false);
+  const [urlError, setUrlError] = useState(null);
+  const [scrapedMeta, setScrapedMeta] = useState(null);
   const fileInputRef = useRef(null);
 
   const formatFileSize = (bytes) => {
@@ -57,6 +62,27 @@ export default function UploadForm({ onSubmit, loading }) {
     const droppedFile = e.dataTransfer.files[0];
     if (droppedFile) {
       validateAndSetFile(droppedFile);
+    }
+  };
+
+  const handleScrapeUrl = async () => {
+    if (!jobUrl || !jobUrl.trim()) return;
+    setUrlLoading(true);
+    setUrlError(null);
+    setScrapedMeta(null);
+
+    try {
+      const data = await scrapeJobUrl(jobUrl.trim());
+      setJobDescription(data.description);
+      setScrapedMeta({
+        title: data.title,
+        company: data.company,
+      });
+      setJobUrl("");
+    } catch (err) {
+      setUrlError(err.message || "Failed to fetch job description from URL.");
+    } finally {
+      setUrlLoading(false);
     }
   };
 
@@ -208,30 +234,110 @@ export default function UploadForm({ onSubmit, loading }) {
       </div>
 
       {/* Job Description Textarea */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-            Target Job Description
-          </label>
-          <div className="flex items-center gap-3">
-            {jobDescription && (
-              <button
-                type="button"
-                onClick={() => setJobDescription("")}
-                className="text-xs font-medium text-slate-400 hover:text-slate-600 transition"
-              >
-                Clear text
-              </button>
-            )}
-            <span
-              className={`text-xs font-medium ${
-                jobDescription.trim().length >= 20 ? "text-emerald-600" : "text-slate-400"
-              }`}
-            >
-              {jobDescription.trim().length} chars (min 20)
+      <div className="space-y-3">
+        {/* URL Scraper Quick-Import Bar */}
+        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-bold text-slate-700 flex items-center gap-1.5">
+              <span>🔗</span>
+              <span>Import from Job URL</span>
+              <span className="text-[10px] font-normal text-slate-400 hidden sm:inline">
+                (Greenhouse, Lever, Indeed, LinkedIn, Workday)
+              </span>
             </span>
           </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="url"
+              value={jobUrl}
+              onChange={(e) => {
+                setJobUrl(e.target.value);
+                setUrlError(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleScrapeUrl();
+                }
+              }}
+              placeholder="Paste job posting URL (e.g. https://boards.greenhouse.io/...)..."
+              disabled={urlLoading}
+              className="flex-1 text-xs px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
+            />
+            <button
+              type="button"
+              onClick={handleScrapeUrl}
+              disabled={urlLoading || !jobUrl.trim()}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer shadow-2xs ${
+                urlLoading || !jobUrl.trim()
+                  ? "bg-slate-200 text-slate-400 cursor-not-allowed"
+                  : "bg-indigo-600 hover:bg-indigo-700 text-white"
+              }`}
+            >
+              {urlLoading ? (
+                <>
+                  <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Fetching...</span>
+                </>
+              ) : (
+                <>
+                  <span>Fetch JD</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          {urlError && (
+            <p className="text-[11px] text-rose-600 flex items-center gap-1">
+              <span>⚠️</span>
+              <span>{urlError}</span>
+            </p>
+          )}
+
+          {scrapedMeta && (
+            <div className="flex items-center justify-between text-[11px] p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800">
+              <span className="font-semibold flex items-center gap-1.5">
+                <span>✓</span>
+                <span>
+                  Imported: <strong>{scrapedMeta.title}</strong> at <strong>{scrapedMeta.company}</strong>
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setScrapedMeta(null)}
+                className="text-emerald-600 hover:text-emerald-800 font-bold cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+          )}
         </div>
+
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+              Target Job Description
+            </label>
+            <div className="flex items-center gap-3">
+              {jobDescription && (
+                <button
+                  type="button"
+                  onClick={() => setJobDescription("")}
+                  className="text-xs font-medium text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                >
+                  Clear text
+                </button>
+              )}
+              <span
+                className={`text-xs font-medium ${
+                  jobDescription.trim().length >= 20 ? "text-emerald-600" : "text-slate-400"
+                }`}
+              >
+                {jobDescription.trim().length} chars (min 20)
+              </span>
+            </div>
+          </div>
 
         <textarea
           value={jobDescription}
@@ -240,6 +346,7 @@ export default function UploadForm({ onSubmit, loading }) {
           placeholder="Paste the target job description here (responsibilities, required qualifications, key technologies)..."
           className="block w-full text-sm border border-slate-300 rounded-2xl p-4 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition shadow-2xs resize-y"
         />
+        </div>
       </div>
 
       {/* Submit Button */}
