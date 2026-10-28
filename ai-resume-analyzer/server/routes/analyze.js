@@ -11,6 +11,7 @@ import {
 import { computeSemanticSimilarity } from "../services/semanticEngine.js";
 import { detectAtsTraps } from "../services/atsTrapDetector.js";
 import { scrapeJobPosting } from "../services/jobScraper.js";
+import { generateTailoredDocx, applyBulletRewrites } from "../services/documentGenerator.js";
 
 const router = Router();
 
@@ -104,6 +105,7 @@ router.post("/analyze", uploadMiddleware, async (req, res) => {
 
     return res.json({
       ...result,
+      resume_text: fullResumeText,
       hybrid_score: hybridScore,
       semantic_analysis: semanticAnalysis,
       ats_traps: atsTraps,
@@ -245,6 +247,38 @@ router.post("/scrape-job", async (req, res) => {
       err.message.includes("HTTP and HTTPS");
     return res.status(isClientError ? 422 : 500).json({
       error: err.message || "Failed to scrape job description from the provided URL.",
+    });
+  }
+});
+
+router.post("/export-docx", async (req, res) => {
+  try {
+    const { resumeText, weakBullets, candidateName, autoApplyRewrites } = req.body;
+    if (!resumeText || typeof resumeText !== "string" || resumeText.trim().length < 40) {
+      return res.status(400).json({ error: "Resume text is missing or too short to export." });
+    }
+
+    const buffer = await generateTailoredDocx({
+      resumeText,
+      weakBullets: Array.isArray(weakBullets) ? weakBullets : [],
+      candidateName: typeof candidateName === "string" ? candidateName : "",
+      autoApplyRewrites: autoApplyRewrites !== false,
+    });
+
+    const safeName = candidateName
+      ? candidateName.replace(/[^a-zA-Z0-9_-]/g, "_")
+      : "Tailored_Resume";
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    );
+    res.setHeader("Content-Disposition", `attachment; filename="${safeName}.docx"`);
+    return res.send(buffer);
+  } catch (err) {
+    console.error("Export DOCX error:", err);
+    return res.status(500).json({
+      error: err.message || "Failed to generate tailored Word document.",
     });
   }
 });
