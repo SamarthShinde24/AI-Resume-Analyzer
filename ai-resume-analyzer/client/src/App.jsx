@@ -14,6 +14,7 @@ import AtsTrapDetector from "./components/AtsTrapDetector.jsx";
 import InterviewPrep from "./components/InterviewPrep.jsx";
 import CoverLetterModal from "./components/CoverLetterModal.jsx";
 import TailoredResumeExportModal from "./components/TailoredResumeExportModal.jsx";
+import ResumeEditor from "./components/ResumeEditor.jsx";
 import { analyzeResume } from "./api.js";
 import { getHistory, saveAnalysis, extractRoleTitle } from "./services/historyService.js";
 
@@ -268,6 +269,20 @@ export default function App() {
               </button>
               <button
                 type="button"
+                onClick={() => setActiveTab("editor")}
+                className={`px-4 py-2.5 text-xs font-bold rounded-lg transition whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                  activeTab === "editor"
+                    ? "bg-indigo-50 text-indigo-700 border-b-2 border-indigo-600"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                }`}
+              >
+                <span>✏️ Live Editor</span>
+                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800">
+                  Live
+                </span>
+              </button>
+              <button
+                type="button"
                 onClick={() => setActiveTab("interview")}
                 className={`px-4 py-2.5 text-xs font-bold rounded-lg transition whitespace-nowrap cursor-pointer ${
                   activeTab === "interview"
@@ -310,6 +325,7 @@ export default function App() {
                   breakdown={result.score_breakdown}
                   hybridScore={result.hybrid_score}
                   semanticAnalysis={result.semantic_analysis}
+                  onOpenEditor={() => setActiveTab("editor")}
                 />
               )}
 
@@ -331,6 +347,37 @@ export default function App() {
               {activeTab === "rewrites" && (
                 <BulletRewrites
                   bullets={result.weak_bullets}
+                  onToast={showToast}
+                />
+              )}
+
+              {activeTab === "editor" && (
+                <ResumeEditor
+                  initialResumeText={result.resume_text || ""}
+                  jobDescription={currentJd}
+                  checklist={result.keyword_checklist || []}
+                  weakBullets={result.weak_bullets || []}
+                  baseScore={result.match_score || 60}
+                  onSaveVersion={(newText, newScore) => {
+                    const snapshot = saveAnalysis(
+                      {
+                        ...result,
+                        match_score: newScore,
+                        resume_text: newText,
+                      },
+                      {
+                        fileName: currentFile?.name || "Edited_Resume.txt",
+                        jobDescription: currentJd,
+                        roleTitle: extractRoleTitle(currentJd),
+                      }
+                    );
+                    if (snapshot) {
+                      setHistory(getHistory());
+                      setActiveVersionLabel(snapshot.versionLabel);
+                      showToast(`Saved live edit as ${snapshot.versionLabel} (${newScore}% match)!`);
+                    }
+                  }}
+                  onOpenDocxModal={() => setIsTailoredDocxOpen(true)}
                   onToast={showToast}
                 />
               )}

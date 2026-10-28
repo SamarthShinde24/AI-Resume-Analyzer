@@ -1,4 +1,11 @@
-export default function ScoreCard({ score, summary, breakdown, hybridScore, semanticAnalysis }) {
+export default function ScoreCard({
+  score,
+  summary,
+  breakdown,
+  hybridScore,
+  semanticAnalysis,
+  onOpenEditor,
+}) {
   const getScoreColor = (val) => {
     if (val >= 75) return "text-emerald-600";
     if (val >= 50) return "text-amber-600";
@@ -73,7 +80,7 @@ export default function ScoreCard({ score, summary, breakdown, hybridScore, sema
           <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
             Overall Candidate Match
           </h2>
-          <div className="pt-1">
+          <div className="pt-2 flex flex-wrap items-center gap-2">
             <span
               className={`inline-block px-3 py-1 rounded-full text-xs font-bold border ${getVerdictBadge(
                 score
@@ -81,6 +88,15 @@ export default function ScoreCard({ score, summary, breakdown, hybridScore, sema
             >
               {getVerdictLabel(score)}
             </span>
+            {onOpenEditor && (
+              <button
+                type="button"
+                onClick={onOpenEditor}
+                className="text-xs font-bold px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 transition cursor-pointer flex items-center gap-1 shadow-2xs"
+              >
+                <span>✏️ Live Editor</span>
+              </button>
+            )}
           </div>
           <p className="text-xs text-slate-500 pt-1">
             Calculated across skills alignment, experience depth, metrics impact, and parseability.
