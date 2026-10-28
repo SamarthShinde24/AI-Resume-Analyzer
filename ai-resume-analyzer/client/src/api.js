@@ -143,3 +143,23 @@ export async function downloadTailoredDocx({
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
+export async function rescoreLive({
+  resumeText,
+  jobDescription,
+  originalChecklist,
+  baseScore,
+}) {
+  const res = await fetch("/api/rescore-live", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      resumeText,
+      jobDescription,
+      originalChecklist,
+      baseScore,
+    }),
+  });
+
+  return parseApiResponse(res, "Failed to re-score resume text.");
+}
