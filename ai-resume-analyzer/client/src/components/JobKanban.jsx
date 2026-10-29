@@ -6,12 +6,15 @@ import {
   updateJobStage,
   deleteKanbanJob,
   getKanbanStats,
+  exportKanbanToCSV,
+  resetToSampleJobs,
 } from "../services/kanbanService.js";
 
 export default function JobKanban({ onToast }) {
   const [jobs, setJobs] = useState(() => getKanbanJobs());
   const [searchQuery, setSearchQuery] = useState("");
   const [minScore, setMinScore] = useState(0);
+  const [selectedStageFilter, setSelectedStageFilter] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingJob, setEditingJob] = useState(null);
 
@@ -37,9 +40,14 @@ export default function JobKanban({ onToast }) {
         (j.role || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
         (j.location || "").toLowerCase().includes(searchQuery.toLowerCase());
       const matchesScore = (j.matchScore || 0) >= minScore;
-      return matchesSearch && matchesScore;
+      const matchesStage =
+        selectedStageFilter === "all" ||
+        (selectedStageFilter === "active" &&
+          ["applied", "interviewing", "offer"].includes(j.stage)) ||
+        j.stage === selectedStageFilter;
+      return matchesSearch && matchesScore && matchesStage;
     });
-  }, [jobs, searchQuery, minScore]);
+  }, [jobs, searchQuery, minScore, selectedStageFilter]);
 
   const handleOpenAddModal = () => {
     setEditingJob(null);
@@ -100,11 +108,41 @@ export default function JobKanban({ onToast }) {
     if (onToast) onToast(`Removed ${company} from pipeline.`);
   };
 
+  const handleExportCSV = () => {
+    if (filteredJobs.length === 0) {
+      if (onToast) onToast("No jobs in current pipeline view to export!");
+      return;
+    }
+    const csv = exportKanbanToCSV(filteredJobs);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `job-pipeline-${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    if (onToast) onToast(`Exported ${filteredJobs.length} job(s) to CSV!`);
+  };
+
+  const handleResetDemoData = () => {
+    const sample = resetToSampleJobs();
+    setJobs(sample);
+    setSelectedStageFilter("all");
+    setMinScore(0);
+    setSearchQuery("");
+    if (onToast) onToast("Pipeline reset with sample tech applications!");
+  };
+
   const getScoreBadge = (score) => {
     if (score >= 80) return "bg-emerald-50 text-emerald-700 border-emerald-200";
     if (score >= 65) return "bg-indigo-50 text-indigo-700 border-indigo-200";
     return "bg-amber-50 text-amber-700 border-amber-200";
   };
+
+  const hasActiveFilters =
+    searchQuery.trim().length > 0 || minScore > 0 || selectedStageFilter !== "all";
 
   return (
     <div className="space-y-6">
@@ -125,62 +163,132 @@ export default function JobKanban({ onToast }) {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={handleOpenAddModal}
-            className="px-4 py-2.5 rounded-xl font-bold text-xs bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs transition flex items-center gap-1.5 cursor-pointer"
-          >
-            <span>➕</span>
-            <span>Add Application</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={handleExportCSV}
+              title="Download pipeline to spreadsheet"
+              className="px-3.5 py-2.5 rounded-xl font-bold text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>📥</span>
+              <span>Export CSV</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleResetDemoData}
+              title="Reload sample demo jobs"
+              className="px-3 py-2.5 rounded-xl font-bold text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 transition flex items-center gap-1 cursor-pointer"
+            >
+              <span>🔄</span>
+              <span className="hidden sm:inline">Reset Demo</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleOpenAddModal}
+              className="px-4 py-2.5 rounded-xl font-bold text-xs bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs transition flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>➕</span>
+              <span>Add Application</span>
+            </button>
+          </div>
         </div>
 
-        {/* CRM Metric Badges */}
+        {/* CRM Metric Badges with One-Click Stage Filter */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5">
-          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
+          <button
+            type="button"
+            onClick={() => setSelectedStageFilter("all")}
+            className={`p-3.5 rounded-2xl border text-left transition cursor-pointer ${
+              selectedStageFilter === "all"
+                ? "bg-indigo-50/70 border-indigo-300 ring-2 ring-indigo-500/20"
+                : "bg-slate-50 hover:bg-slate-100/80 border-slate-100"
+            }`}
+          >
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
               Total Tracked
             </span>
             <div className="text-xl font-black text-slate-900 mt-0.5">{stats.total}</div>
-            <p className="text-[10px] text-slate-500 mt-0.5">Across all pipeline stages</p>
-          </div>
+            <p className="text-[10px] text-slate-500 mt-0.5">Click to show all jobs</p>
+          </button>
 
-          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
+          <button
+            type="button"
+            onClick={() => setSelectedStageFilter("active")}
+            className={`p-3.5 rounded-2xl border text-left transition cursor-pointer ${
+              selectedStageFilter === "active"
+                ? "bg-indigo-50/70 border-indigo-300 ring-2 ring-indigo-500/20"
+                : "bg-slate-50 hover:bg-slate-100/80 border-slate-100"
+            }`}
+          >
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
               Active Applications
             </span>
             <div className="text-xl font-black text-indigo-600 mt-0.5">{stats.applied}</div>
             <p className="text-[10px] text-slate-500 mt-0.5">Applied, Screening & Loops</p>
-          </div>
+          </button>
 
-          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
+          <button
+            type="button"
+            onClick={() => setSelectedStageFilter("interviewing")}
+            className={`p-3.5 rounded-2xl border text-left transition cursor-pointer ${
+              selectedStageFilter === "interviewing"
+                ? "bg-amber-50/70 border-amber-300 ring-2 ring-amber-500/20"
+                : "bg-slate-50 hover:bg-slate-100/80 border-slate-100"
+            }`}
+          >
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
               Interview Conversion
             </span>
             <div className="text-xl font-black text-amber-600 mt-0.5">{stats.interviewRate}%</div>
-            <p className="text-[10px] text-slate-500 mt-0.5">{stats.interviewing} in interview loops</p>
-          </div>
+            <p className="text-[10px] text-slate-500 mt-0.5">{stats.interviewing} in loops</p>
+          </button>
 
-          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
+          <button
+            type="button"
+            onClick={() => setSelectedStageFilter("offer")}
+            className={`p-3.5 rounded-2xl border text-left transition cursor-pointer ${
+              selectedStageFilter === "offer"
+                ? "bg-emerald-50/70 border-emerald-300 ring-2 ring-emerald-500/20"
+                : "bg-slate-50 hover:bg-slate-100/80 border-slate-100"
+            }`}
+          >
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
               Offers Received
             </span>
             <div className="text-xl font-black text-emerald-600 mt-0.5">{stats.offers}</div>
             <p className="text-[10px] text-slate-500 mt-0.5">Offer rate: {stats.offerRate}%</p>
-          </div>
+          </button>
         </div>
 
         {/* Search & Filter Toolbar */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-5 pt-5 border-t border-slate-100">
-          <div className="relative w-full sm:w-72">
-            <span className="absolute left-3 top-2.5 text-xs text-slate-400">🔍</span>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search company, title, location..."
-              className="w-full text-xs pl-8 pr-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
-            />
+          <div className="flex items-center gap-2 w-full sm:w-auto flex-1">
+            <div className="relative w-full sm:w-72">
+              <span className="absolute left-3 top-2.5 text-xs text-slate-400">🔍</span>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search company, title, location..."
+                className="w-full text-xs pl-8 pr-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
+              />
+            </div>
+
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery("");
+                  setMinScore(0);
+                  setSelectedStageFilter("all");
+                }}
+                className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-2.5 py-1.5 rounded-lg transition cursor-pointer shrink-0"
+              >
+                Clear Filters
+              </button>
+            )}
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end text-xs">
@@ -207,7 +315,7 @@ export default function JobKanban({ onToast }) {
 
       {/* Kanban Board Columns Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
-        {STAGES.filter((s) => s.id !== "rejected").map((stage, colIdx) => {
+        {STAGES.filter((s) => s.id !== "rejected").map((stage) => {
           const stageJobs = filteredJobs.filter((j) => j.stage === stage.id);
           const stageOrder = ["saved", "applied", "interviewing", "offer"];
 

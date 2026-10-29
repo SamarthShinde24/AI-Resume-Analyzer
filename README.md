@@ -13,6 +13,7 @@ Powered by native structured JSON output across **Groq**, **Anthropic Claude**, 
   - **Exact Resume Version Linking:** Automatically pairs each target job application to the specific resume version snapshot (e.g. `v2 (Tailored)`) and match score used.
   - **Recruiter "Batch Screening" Mode (`/api/batch-screen`):** Instant toggle switching from Job Seeker mode to Recruiter mode to evaluate up to 15 candidate resumes simultaneously against a single job description.
   - **Ranked Candidate Leaderboard:** Generates real-time candidate rankings (#1, #2, #3 with Gold 🥇, Silver 🥈, Bronze 🥉 badges), vector overlap badges, ATS health pills, and 1-click CSV shortlist export.
+  - **Interactive Kanban Stage Filtering & CRM CSV Export:** Filter jobs on the fly by clicking CRM metric cards (Active Applications, Interview Conversion, Offers) and export complete pipeline spreadsheets (.csv) with linked resume versions and interview notes.
 
 - **24/7 Cloud Automation & Scheduled Commit Worker (New):**
   - **Runs Even When Your Laptop Is Off:** Powered by GitHub Actions cloud runners (`.github/workflows/scheduled-tasks.yml`) executing on a schedule (10:00 AM IST daily) or on-demand via `workflow_dispatch`.

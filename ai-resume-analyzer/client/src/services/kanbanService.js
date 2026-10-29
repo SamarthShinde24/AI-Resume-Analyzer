@@ -147,3 +147,45 @@ export function getKanbanStats(jobs = []) {
     offerRate,
   };
 }
+
+
+export function exportKanbanToCSV(jobs = []) {
+  const list = jobs.length > 0 ? jobs : getKanbanJobs();
+  const headers = [
+    "Company",
+    "Role",
+    "Stage",
+    "Match Score",
+    "Resume Version",
+    "Location",
+    "Salary",
+    "Date Added",
+    "Notes",
+    "Job URL",
+  ];
+
+  const rows = list.map((j) => [
+    `"${(j.company || "").replace(/"/g, '""')}"`,
+    `"${(j.role || "").replace(/"/g, '""')}"`,
+    `"${(j.stage || "").replace(/"/g, '""')}"`,
+    j.matchScore || 0,
+    `"${(j.resumeVersion || "").replace(/"/g, '""')}"`,
+    `"${(j.location || "").replace(/"/g, '""')}"`,
+    `"${(j.salary || "").replace(/"/g, '""')}"`,
+    `"${(j.dateAdded || "").replace(/"/g, '""')}"`,
+    `"${(j.notes || "").replace(/"/g, '""')}"`,
+    `"${(j.url || "").replace(/"/g, '""')}"`,
+  ]);
+
+  return [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+}
+
+export function exportKanbanToJSON(jobs = []) {
+  const list = jobs.length > 0 ? jobs : getKanbanJobs();
+  return JSON.stringify(list, null, 2);
+}
+
+export function resetToSampleJobs() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_SAMPLE_JOBS));
+  return INITIAL_SAMPLE_JOBS;
+}
