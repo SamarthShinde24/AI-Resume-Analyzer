@@ -16,6 +16,7 @@ import CoverLetterModal from "./components/CoverLetterModal.jsx";
 import TailoredResumeExportModal from "./components/TailoredResumeExportModal.jsx";
 import ResumeEditor from "./components/ResumeEditor.jsx";
 import JobKanban from "./components/JobKanban.jsx";
+import RecruiterScreening from "./components/RecruiterScreening.jsx";
 import { analyzeResume } from "./api.js";
 import { getHistory, saveAnalysis, extractRoleTitle } from "./services/historyService.js";
 import { saveKanbanJob } from "./services/kanbanService.js";
@@ -34,7 +35,7 @@ export default function App() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isCoverLetterOpen, setIsCoverLetterOpen] = useState(false);
   const [isTailoredDocxOpen, setIsTailoredDocxOpen] = useState(false);
-  const [viewMode, setViewMode] = useState("analyzer"); // "analyzer" | "kanban"
+  const [viewMode, setViewMode] = useState("analyzer"); // "analyzer" | "kanban" | "recruiter"
   const [compareVersions, setCompareVersions] = useState(null);
 
   const showToast = (message) => {
@@ -140,6 +141,35 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Mode Switcher: Job Seeker vs Recruiter */}
+            <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200">
+              <button
+                type="button"
+                onClick={() => setViewMode("analyzer")}
+                className={`text-xs font-bold px-3 py-1.5 rounded-lg transition cursor-pointer ${
+                  viewMode === "analyzer"
+                    ? "bg-white text-indigo-700 shadow-2xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                👤 Job Seeker
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("recruiter")}
+                className={`text-xs font-bold px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1 ${
+                  viewMode === "recruiter"
+                    ? "bg-indigo-600 text-white shadow-2xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <span>👔 Recruiter</span>
+                <span className="text-[9px] font-black uppercase px-1 py-0.2 rounded bg-black/10">
+                  Batch
+                </span>
+              </button>
+            </div>
+
             <button
               type="button"
               onClick={() => {
@@ -210,13 +240,17 @@ export default function App() {
         </div>
       </header>
 
-      {/* Hero Intro */}
+      {/* Main Workspace */}
       <main className="max-w-5xl mx-auto px-4 pt-8">
-        {!result && viewMode === "kanban" && (
+        {viewMode === "recruiter" && (
+          <RecruiterScreening onToast={showToast} />
+        )}
+
+        {viewMode === "kanban" && !result && (
           <JobKanban onToast={showToast} />
         )}
 
-        {!result && viewMode !== "kanban" && (
+        {viewMode === "analyzer" && !result && (
           <div className="text-center mb-8 space-y-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200 mb-2">
               <span>🚀 Upgraded ATS Engine</span>
@@ -234,10 +268,12 @@ export default function App() {
         )}
 
         {/* Loading Progress State */}
-        {loading && <LoadingSteps />}
+        {viewMode === "analyzer" && loading && <LoadingSteps />}
 
         {/* Upload Form */}
-        {!result && !loading && viewMode !== "kanban" && <UploadForm onSubmit={handleSubmit} loading={loading} />}
+        {viewMode === "analyzer" && !result && !loading && (
+          <UploadForm onSubmit={handleSubmit} loading={loading} />
+        )}
 
         {/* Error Alert */}
         {error && (
@@ -251,7 +287,7 @@ export default function App() {
         )}
 
         {/* Analysis Results View */}
-        {result && (
+        {viewMode === "analyzer" && result && (
           <div className="mt-4 space-y-6">
             {/* Navigation Tabs */}
             <div className="flex border-b border-slate-200 bg-white rounded-t-2xl px-2 pt-2 gap-1 overflow-x-auto shadow-2xs">

@@ -8,6 +8,12 @@ Powered by native structured JSON output across **Groq**, **Anthropic Claude**, 
 
 ## Key Features
 
+- **Job Search Tracker & Recruiter SaaS Mode (New):**
+  - **Job Application Kanban CRM Pipeline:** Mini application tracking CRM persisting jobs across 5 distinct stages (*Saved* → *Applied* → *Interviewing* → *Offer* → *Archived*).
+  - **Exact Resume Version Linking:** Automatically pairs each target job application to the specific resume version snapshot (e.g. `v2 (Tailored)`) and match score used.
+  - **Recruiter "Batch Screening" Mode (`/api/batch-screen`):** Instant toggle switching from Job Seeker mode to Recruiter mode to evaluate up to 15 candidate resumes simultaneously against a single job description.
+  - **Ranked Candidate Leaderboard:** Generates real-time candidate rankings (#1, #2, #3 with Gold 🥇, Silver 🥈, Bronze 🥉 badges), vector overlap badges, ATS health pills, and 1-click CSV shortlist export.
+
 - **24/7 Cloud Automation & Scheduled Commit Worker (New):**
   - **Runs Even When Your Laptop Is Off:** Powered by GitHub Actions cloud runners (`.github/workflows/scheduled-tasks.yml`) executing on a schedule (10:00 AM IST daily) or on-demand via `workflow_dispatch`.
   - **Automated Task Queue (`tasks/queue.json`):** Queue tasks (sample audits, health checks, benchmark generation) that run in GitHub's cloud and automatically commit verified reports back to `main`.
@@ -178,5 +184,32 @@ Returns sub-10ms deterministic live re-score, vector cosine distance, and real-t
   "score_delta": 13,
   "checklist": [ ... ],
   "newly_resolved": ["Kubernetes", "GraphQL"]
+}
+```
+
+### `POST /api/batch-screen`
+Accepts `multipart/form-data` with `resumes` (up to 15 files) and `jobDescription` (string).
+Returns ranked candidate leaderboard with summary statistics:
+```json
+{
+  "summary": {
+    "total_screened": 8,
+    "average_score": 76,
+    "top_score": 92,
+    "top_candidate": "Jane Doe",
+    "qualified_count": 6
+  },
+  "leaderboard": [
+    {
+      "rank": 1,
+      "candidate_name": "Jane Doe",
+      "file_name": "Jane_Doe_Resume.pdf",
+      "score": 92,
+      "semantic_score": 94,
+      "ats_health_score": 88,
+      "status": "Top Match",
+      "matched_keywords": [ ... ]
+    }
+  ]
 }
 ```

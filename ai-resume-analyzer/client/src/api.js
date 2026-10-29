@@ -163,3 +163,18 @@ export async function rescoreLive({
 
   return parseApiResponse(res, "Failed to re-score resume text.");
 }
+
+export async function batchScreenResumes(files, jobDescription) {
+  const formData = new FormData();
+  for (const file of files) {
+    formData.append("resumes", file);
+  }
+  formData.append("jobDescription", jobDescription);
+
+  const res = await fetch("/api/batch-screen", {
+    method: "POST",
+    body: formData,
+  });
+
+  return parseApiResponse(res, "Failed to process batch resume screening.");
+}
