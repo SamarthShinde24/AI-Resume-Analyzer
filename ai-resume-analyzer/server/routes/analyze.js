@@ -61,6 +61,42 @@ const uploadMiddleware = (req, res, next) => {
   });
 };
 
+const batchUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: MAX_FILE_SIZE,
+    files: 15,
+  },
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname || "").toLowerCase();
+    const isAllowedExt = ALLOWED_EXTENSIONS.has(ext);
+    const isAllowedMime = ALLOWED_MIME_TYPES.has(file.mimetype);
+
+    if (isAllowedExt || isAllowedMime) {
+      cb(null, true);
+    } else {
+      cb(new Error(`Invalid file "${file.originalname}". Only PDF, DOCX, and TXT files are accepted.`));
+    }
+  },
+});
+
+const batchUploadMiddleware = (req, res, next) => {
+  batchUpload.array("resumes", 15)(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      if (err.code === "LIMIT_FILE_SIZE") {
+        return res.status(400).json({ error: "One or more files exceed the 5MB size limit." });
+      }
+      if (err.code === "LIMIT_FILE_COUNT") {
+        return res.status(400).json({ error: "Maximum 15 resumes can be screened in a single batch." });
+      }
+      return res.status(400).json({ error: `Batch upload error: ${err.message}` });
+    } else if (err) {
+      return res.status(400).json({ error: err.message });
+    }
+    next();
+  });
+};
+
 router.post("/analyze", uploadMiddleware, async (req, res) => {
   try {
     const { jobDescription } = req.body;
@@ -366,6 +402,200 @@ router.post("/rescore-live", async (req, res) => {
   } catch (err) {
     console.error("Rescore live error:", err);
     return res.status(500).json({ error: err.message || "Failed to re-score resume text." });
+  }
+});
+
+/**
+ * Extracts a readable candidate name from parsed resume text or filename.
+ */
+function extractCandidateName(text, fileName = "") {
+  if (text) {
+    const lines = text
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0);
+
+    for (let i = 0; i < Math.min(lines.length, 4); i++) {
+      const line = lines[i];
+      if (
+        line.length >= 3 &&
+        line.length <= 35 &&
+        !/@|\+?\d|linkedin|github|experience|summary|resume|curriculum|objective/i.test(line) &&
+        /^[a-zA-Z\s.'-]+$/.test(line)
+      ) {
+        return line;
+      }
+    }
+  }
+
+  if (fileName) {
+    const base = path.basename(fileName, path.extname(fileName));
+    const cleaned = base
+      .replace(/[-_.]*(resume|cv|application|profile|v\d+)[-_.]*/gi, " ")
+      .replace(/[-_]+/g, " ")
+      .trim();
+
+    if (cleaned.length >= 2) {
+      return cleaned
+        .split(" ")
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+        .join(" ");
+    }
+  }
+
+  return "Candidate";
+}
+
+/**
+ * Formats byte size into human readable string.
+ */
+function formatBytes(bytes) {
+  if (!bytes) return "0 KB";
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${kb.toFixed(1)} KB`;
+  return `${(kb / 1024).toFixed(2)} MB`;
+}
+
+router.post("/batch-screen", batchUploadMiddleware, async (req, res) => {
+  try {
+    const { jobDescription } = req.body;
+    const files = req.files;
+
+    if (!files || files.length === 0) {
+      return res.status(400).json({ error: "No resumes uploaded for batch screening." });
+    }
+
+    if (!jobDescription || jobDescription.trim().length < 20) {
+      return res.status(400).json({
+        error: "Job description is missing or too short (minimum 20 characters required).",
+      });
+    }
+
+    const cleanJd = jobDescription.trim();
+    const candidateResults = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      try {
+        const text = await extractResumeText(file.buffer, file.mimetype, file.originalname);
+
+        if (!text || text.trim().length < 30) {
+          candidateResults.push({
+            id: `cand-${i + 1}`,
+            candidate_name: extractCandidateName("", file.originalname),
+            file_name: file.originalname,
+            file_size: formatBytes(file.size),
+            score: 25,
+            semantic_score: 20,
+            ats_health_score: 30,
+            cosine_distance: 0.1,
+            matched_keywords: [],
+            critical_traps_count: 1,
+            warnings_count: 0,
+            status: "Unparseable",
+            status_badge: "bg-rose-50 text-rose-700 border-rose-200",
+            summary: "Could not extract readable text from document.",
+            snippet: "Document could not be parsed into text.",
+          });
+          continue;
+        }
+
+        const safeText = text.length > 25000 ? text.slice(0, 25000) : text;
+        const candidateName = extractCandidateName(safeText, file.originalname);
+        const semantic = computeSemanticSimilarity(safeText, cleanJd);
+        const traps = detectAtsTraps(safeText);
+
+        const compositeScore = Math.max(
+          15,
+          Math.min(
+            100,
+            Math.round(0.65 * (semantic.score || 50) + 0.35 * (traps.ats_health_score || 70))
+          )
+        );
+
+        let status = "Needs Review";
+        let statusBadge = "bg-rose-50 text-rose-700 border-rose-200";
+
+        if (compositeScore >= 80) {
+          status = "Top Match";
+          statusBadge = "bg-emerald-50 text-emerald-700 border-emerald-200";
+        } else if (compositeScore >= 65) {
+          status = "Qualified";
+          statusBadge = "bg-indigo-50 text-indigo-700 border-indigo-200";
+        } else if (compositeScore >= 50) {
+          status = "Moderate Fit";
+          statusBadge = "bg-amber-50 text-amber-700 border-amber-200";
+        }
+
+        candidateResults.push({
+          id: `cand-${i + 1}`,
+          candidate_name: candidateName,
+          file_name: file.originalname,
+          file_size: formatBytes(file.size),
+          score: compositeScore,
+          semantic_score: semantic.score,
+          ats_health_score: traps.ats_health_score,
+          cosine_distance: semantic.raw_cosine,
+          matched_keywords: semantic.vector_overlap || [],
+          critical_traps_count: traps.traps.filter((t) => t.severity === "critical").length,
+          warnings_count: traps.traps.filter((t) => t.severity === "warning").length,
+          status,
+          status_badge: statusBadge,
+          snippet: safeText.slice(0, 220).replace(/\s+/g, " ") + "...",
+        });
+      } catch (fileErr) {
+        console.warn(`Error screening file ${file.originalname}:`, fileErr.message);
+        candidateResults.push({
+          id: `cand-${i + 1}`,
+          candidate_name: extractCandidateName("", file.originalname),
+          file_name: file.originalname,
+          file_size: formatBytes(file.size),
+          score: 20,
+          semantic_score: 15,
+          ats_health_score: 25,
+          cosine_distance: 0.05,
+          matched_keywords: [],
+          critical_traps_count: 1,
+          warnings_count: 0,
+          status: "Error",
+          status_badge: "bg-rose-50 text-rose-700 border-rose-200",
+          snippet: `File processing error: ${fileErr.message}`,
+        });
+      }
+    }
+
+    // Sort leaderboard descending by score
+    candidateResults.sort((a, b) => b.score - a.score);
+
+    // Assign 1-indexed ranks
+    candidateResults.forEach((c, idx) => {
+      c.rank = idx + 1;
+    });
+
+    const totalScreened = candidateResults.length;
+    const avgScore =
+      totalScreened > 0
+        ? Math.round(candidateResults.reduce((acc, c) => acc + c.score, 0) / totalScreened)
+        : 0;
+    const topCandidate = candidateResults[0]?.candidate_name || "N/A";
+    const topScore = candidateResults[0]?.score || 0;
+    const qualifiedCount = candidateResults.filter((c) => c.score >= 65).length;
+
+    return res.json({
+      summary: {
+        total_screened: totalScreened,
+        average_score: avgScore,
+        top_score: topScore,
+        top_candidate: topCandidate,
+        qualified_count: qualifiedCount,
+      },
+      leaderboard: candidateResults,
+    });
+  } catch (err) {
+    console.error("Batch screening error:", err);
+    return res.status(500).json({
+      error: err.message || "Failed to process batch resume screening.",
+    });
   }
 });
 
