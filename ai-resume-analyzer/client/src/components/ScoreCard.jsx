@@ -5,6 +5,7 @@ export default function ScoreCard({
   hybridScore,
   semanticAnalysis,
   onOpenEditor,
+  onSaveToKanban,
 }) {
   const getScoreColor = (val) => {
     if (val >= 75) return "text-emerald-600";
@@ -95,6 +96,15 @@ export default function ScoreCard({
                 className="text-xs font-bold px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 transition cursor-pointer flex items-center gap-1 shadow-2xs"
               >
                 <span>✏️ Live Editor</span>
+              </button>
+            )}
+            {onSaveToKanban && (
+              <button
+                type="button"
+                onClick={onSaveToKanban}
+                className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition cursor-pointer flex items-center gap-1 shadow-2xs"
+              >
+                <span>💼 Track in Pipeline</span>
               </button>
             )}
           </div>

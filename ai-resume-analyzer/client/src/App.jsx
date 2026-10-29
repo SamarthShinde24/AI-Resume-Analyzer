@@ -15,8 +15,10 @@ import InterviewPrep from "./components/InterviewPrep.jsx";
 import CoverLetterModal from "./components/CoverLetterModal.jsx";
 import TailoredResumeExportModal from "./components/TailoredResumeExportModal.jsx";
 import ResumeEditor from "./components/ResumeEditor.jsx";
+import JobKanban from "./components/JobKanban.jsx";
 import { analyzeResume } from "./api.js";
 import { getHistory, saveAnalysis, extractRoleTitle } from "./services/historyService.js";
+import { saveKanbanJob } from "./services/kanbanService.js";
 
 export default function App() {
   const [result, setResult] = useState(null);
@@ -32,6 +34,7 @@ export default function App() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isCoverLetterOpen, setIsCoverLetterOpen] = useState(false);
   const [isTailoredDocxOpen, setIsTailoredDocxOpen] = useState(false);
+  const [viewMode, setViewMode] = useState("analyzer"); // "analyzer" | "kanban"
   const [compareVersions, setCompareVersions] = useState(null);
 
   const showToast = (message) => {
@@ -39,6 +42,21 @@ export default function App() {
     setTimeout(() => {
       setToast(null);
     }, 2600);
+  };
+
+  const handleSaveToPipeline = () => {
+    if (!result) return;
+    const role = extractRoleTitle(currentJd) || "Software Engineer";
+    saveKanbanJob({
+      company: "Target Company",
+      role,
+      stage: "applied",
+      matchScore: result.match_score || 75,
+      resumeVersion: activeVersionLabel || currentFile?.name || "v1",
+      notes: `Analyzed with ATS score ${result.match_score}%. Ready for application loop.`,
+    });
+    showToast(`Saved ${role} to Job Application Pipeline!`);
+    setActiveTab("kanban");
   };
 
   const handleRestoreVersion = (snapshot) => {
@@ -124,6 +142,24 @@ export default function App() {
           <div className="flex items-center gap-2">
             <button
               type="button"
+              onClick={() => {
+                if (result) {
+                  setActiveTab("kanban");
+                } else {
+                  setViewMode(viewMode === "kanban" ? "analyzer" : "kanban");
+                }
+              }}
+              className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition flex items-center gap-1.5 cursor-pointer shadow-2xs ${
+                viewMode === "kanban" || (result && activeTab === "kanban")
+                  ? "bg-indigo-600 text-white border-indigo-600"
+                  : "text-slate-700 hover:text-indigo-600 border-slate-200 bg-white hover:border-indigo-300"
+              }`}
+            >
+              <span>💼 Tracker CRM</span>
+            </button>
+
+            <button
+              type="button"
               onClick={() => setIsHistoryOpen(true)}
               className="text-xs font-semibold text-slate-700 hover:text-indigo-600 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:border-indigo-300 transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
             >
@@ -175,8 +211,12 @@ export default function App() {
       </header>
 
       {/* Hero Intro */}
-      <main className="max-w-4xl mx-auto px-4 pt-10">
-        {!result && (
+      <main className="max-w-5xl mx-auto px-4 pt-8">
+        {!result && viewMode === "kanban" && (
+          <JobKanban onToast={showToast} />
+        )}
+
+        {!result && viewMode !== "kanban" && (
           <div className="text-center mb-8 space-y-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200 mb-2">
               <span>🚀 Upgraded ATS Engine</span>
@@ -197,7 +237,7 @@ export default function App() {
         {loading && <LoadingSteps />}
 
         {/* Upload Form */}
-        {!result && !loading && <UploadForm onSubmit={handleSubmit} loading={loading} />}
+        {!result && !loading && viewMode !== "kanban" && <UploadForm onSubmit={handleSubmit} loading={loading} />}
 
         {/* Error Alert */}
         {error && (
@@ -314,6 +354,17 @@ export default function App() {
               >
                 📑 Full Audit Report
               </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("kanban")}
+                className={`px-4 py-2.5 text-xs font-bold rounded-lg transition whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                  activeTab === "kanban"
+                    ? "bg-indigo-50 text-indigo-700 border-b-2 border-indigo-600"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                }`}
+              >
+                <span>💼 Job Tracker</span>
+              </button>
             </div>
 
             {/* Tab Contents */}
@@ -326,6 +377,7 @@ export default function App() {
                   hybridScore={result.hybrid_score}
                   semanticAnalysis={result.semantic_analysis}
                   onOpenEditor={() => setActiveTab("editor")}
+                  onSaveToKanban={handleSaveToPipeline}
                 />
               )}
 
@@ -406,6 +458,10 @@ export default function App() {
                   checklist={result.keyword_checklist}
                   weakBullets={result.weak_bullets}
                 />
+              )}
+
+              {activeTab === "kanban" && (
+                <JobKanban onToast={showToast} />
               )}
             </div>
           </div>
