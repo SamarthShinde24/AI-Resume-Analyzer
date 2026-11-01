@@ -19,6 +19,30 @@ Requirements:
 • Hands-on experience with Docker, CI/CD, Kubernetes, and AWS cloud services.
 • Strong foundation in system design, database indexing, and REST/GraphQL API design.`;
 
+
+export const WEIGHT_PRESETS = {
+  balanced: {
+    id: "balanced",
+    label: "⚖️ Balanced ATS Standard",
+    semanticWeight: 0.5,
+    atsWeight: 0.3,
+    baseWeight: 0.2,
+  },
+  technical: {
+    id: "technical",
+    label: "💻 Deep Technical Focus",
+    semanticWeight: 0.75,
+    atsWeight: 0.15,
+    baseWeight: 0.1,
+  },
+  ats_strict: {
+    id: "ats_strict",
+    label: "📋 ATS Parseability Strict",
+    semanticWeight: 0.3,
+    atsWeight: 0.5,
+    baseWeight: 0.2,
+  },
+};
 export default function RecruiterScreening({ onToast }) {
   const [jobDescription, setJobDescription] = useState(DEFAULT_SAMPLE_JD);
   const [files, setFiles] = useState([]);
@@ -27,6 +51,7 @@ export default function RecruiterScreening({ onToast }) {
   const [results, setResults] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [minScoreFilter, setMinScoreFilter] = useState(0);
+  const [weightPreset, setWeightPreset] = useState("balanced");
   const [jobUrl, setJobUrl] = useState("");
   const [urlLoading, setUrlLoading] = useState(false);
   const [urlError, setUrlError] = useState(null);
@@ -197,15 +222,41 @@ export default function RecruiterScreening({ onToast }) {
 
   const filteredLeaderboard = useMemo(() => {
     if (!results?.leaderboard) return [];
-    return results.leaderboard.filter((c) => {
+    const preset = WEIGHT_PRESETS[weightPreset] || WEIGHT_PRESETS.balanced;
+    const scored = results.leaderboard.map((c) => {
+      const dynamicScore = Math.min(
+        100,
+        Math.max(
+          10,
+          Math.round(
+            (c.semantic_score || 70) * preset.semanticWeight +
+            (c.ats_health_score || 70) * preset.atsWeight +
+            (c.score || 70) * preset.baseWeight
+          )
+        )
+      );
+      return {
+        ...c,
+        effectiveScore: dynamicScore,
+      };
+    });
+
+    scored.sort((a, b) => b.effectiveScore - a.effectiveScore);
+
+    const reRanked = scored.map((c, idx) => ({
+      ...c,
+      dynamicRank: idx + 1,
+    }));
+
+    return reRanked.filter((c) => {
       const matchesSearch =
         c.candidate_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         c.file_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         c.matched_keywords.some((k) => k.term.toLowerCase().includes(searchQuery.toLowerCase()));
-      const matchesScore = c.score >= minScoreFilter;
+      const matchesScore = c.effectiveScore >= minScoreFilter;
       return matchesSearch && matchesScore;
     });
-  }, [results, searchQuery, minScoreFilter]);
+  }, [results, searchQuery, minScoreFilter, weightPreset]);
 
   const getRankBadge = (rank) => {
     if (rank === 1) return { icon: "🥇", style: "bg-amber-100 text-amber-800 border-amber-300 font-black" };
@@ -452,7 +503,25 @@ export default function RecruiterScreening({ onToast }) {
               />
             </div>
 
-            <div className="flex items-center gap-2 w-full sm:w-auto justify-end text-xs">
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end text-xs">
+              <div className="flex items-center gap-1.5 text-xs mr-2">
+                <span className="text-slate-500 text-[11px] whitespace-nowrap">Weight:</span>
+                <select
+                  value={weightPreset}
+                  onChange={(e) => {
+                    setWeightPreset(e.target.value);
+                    if (onToast) onToast(`Leaderboard re-ranked by: ${WEIGHT_PRESETS[e.target.value]?.label}`);
+                  }}
+                  className="text-xs px-2.5 py-1 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white font-medium cursor-pointer"
+                >
+                  {Object.values(WEIGHT_PRESETS).map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <span className="text-slate-500 text-[11px]">Score Threshold:</span>
               <div className="flex items-center gap-1">
                 {[0, 65, 80].map((val) => (
@@ -512,7 +581,7 @@ export default function RecruiterScreening({ onToast }) {
           {/* Ranked Candidate Leaderboard Cards */}
           <div className="space-y-3">
             {filteredLeaderboard.map((cand) => {
-              const rankInfo = getRankBadge(cand.rank);
+              const rankInfo = getRankBadge(cand.dynamicRank || cand.rank);
               const isExpanded = expandedCandId === cand.id;
 
               return (
@@ -569,7 +638,7 @@ export default function RecruiterScreening({ onToast }) {
                     <div className="flex items-center gap-4">
                       <div className="text-right">
                         <div className="text-2xl font-black text-slate-900 font-mono">
-                          {cand.score}%
+                          {cand.effectiveScore || cand.score}%
                         </div>
                         <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                           Composite Fit
