@@ -45,18 +45,33 @@ export default function App() {
     }, 2600);
   };
 
+  const extractCompanyFromJd = (jd) => {
+    if (!jd) return "Target Company";
+    const match = jd.match(/(?:Company|Organization|At):\s*([^\n\r,]+)/i);
+    if (match && match[1].trim()) return match[1].trim();
+    const firstLine = (jd.split('\n')[0] || "").trim();
+    if (firstLine.includes(" at ")) {
+      return firstLine.split(" at ")[1].trim();
+    }
+    return "Target Company";
+  };
+
   const handleSaveToPipeline = () => {
     if (!result) return;
     const role = extractRoleTitle(currentJd) || "Software Engineer";
+    const company = extractCompanyFromJd(currentJd);
     saveKanbanJob({
-      company: "Target Company",
+      company,
       role,
       stage: "applied",
       matchScore: result.match_score || 75,
       resumeVersion: activeVersionLabel || currentFile?.name || "v1",
-      notes: `Analyzed with ATS score ${result.match_score}%. Ready for application loop.`,
+      interviewRound: "Recruiter Screen",
+      dueDate: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
+      priority: (result.match_score || 0) >= 80 ? "High Priority" : "Normal",
+      notes: `Evaluated with ATS score ${result.match_score}%. Matched skills: ${(result.matched_skills || []).slice(0, 5).join(", ") || "General Stack"}.`,
     });
-    showToast(`Saved ${role} to Job Application Pipeline!`);
+    showToast(`Tracked ${role} at ${company} in Application Pipeline!`);
     setActiveTab("kanban");
   };
 
@@ -203,6 +218,15 @@ export default function App() {
 
             {result && (
               <>
+                <button
+                  type="button"
+                  onClick={handleSaveToPipeline}
+                  className="text-xs font-bold text-indigo-700 hover:text-indigo-900 px-3 py-1.5 rounded-lg border border-indigo-200 bg-indigo-50/90 hover:bg-indigo-100 transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                  title="Save job and match score to your Kanban CRM pipeline"
+                >
+                  <span>💼 Track Job</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => setIsTailoredDocxOpen(true)}
