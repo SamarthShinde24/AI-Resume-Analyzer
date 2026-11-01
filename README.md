@@ -10,10 +10,14 @@ Powered by native structured JSON output across **Groq**, **Anthropic Claude**, 
 
 - **Job Search Tracker & Recruiter SaaS Mode (New):**
   - **Job Application Kanban CRM Pipeline:** Mini application tracking CRM persisting jobs across 5 distinct stages (*Saved* → *Applied* → *Interviewing* → *Offer* → *Archived*).
+  - **Native Drag-and-Drop Column Interaction:** Drag applications directly across Kanban columns with reactive dashed dropzone borders and stage progression animations.
+  - **Interview Timeline & Urgent Action Reminders:** Track specific interview loop rounds (*Recruiter Screen*, *Technical*, *System Design*, *Hiring Manager*, *Offer Review*) with automatic urgency alerts (*Scheduled Today*, *Tomorrow*, *Overdue*).
   - **Exact Resume Version Linking:** Automatically pairs each target job application to the specific resume version snapshot (e.g. `v2 (Tailored)`) and match score used.
+  - **1-Click "Track in Pipeline" Integration:** Seamlessly add analyzed job descriptions directly to the application tracker with company metadata, matched skills, and priority tags.
   - **Recruiter "Batch Screening" Mode (`/api/batch-screen`):** Instant toggle switching from Job Seeker mode to Recruiter mode to evaluate up to 15 candidate resumes simultaneously against a single job description.
-  - **Ranked Candidate Leaderboard:** Generates real-time candidate rankings (#1, #2, #3 with Gold 🥇, Silver 🥈, Bronze 🥉 badges), vector overlap badges, ATS health pills, and 1-click CSV shortlist export.
-  - **Interactive Kanban Stage Filtering & CRM CSV Export:** Filter jobs on the fly by clicking CRM metric cards (Active Applications, Interview Conversion, Offers) and export complete pipeline spreadsheets (.csv) with linked resume versions and interview notes.
+  - **Ranked Candidate Leaderboard & Priority Weights:** Re-score candidate rankings dynamically using custom presets (*Balanced ATS Standard*, *Deep Technical Focus*, *ATS Parseability Strict*).
+  - **Side-by-Side Candidate Comparison Matrix:** Select top candidates to compare their Semantic Cosine Overlap, ATS Formatting Health, and skill gaps in a unified comparative decision matrix.
+  - **Application Funnel Analytics & CSV Export:** View stage-by-stage career pipeline yield rates (*Saved* → *Applied* → *Interviewing* → *Offers*) and export candidate shortlists as CSV spreadsheets or Slack briefs.
 
 - **24/7 Cloud Automation & Scheduled Commit Worker (New):**
   - **Runs Even When Your Laptop Is Off:** Powered by GitHub Actions cloud runners (`.github/workflows/scheduled-tasks.yml`) executing on a schedule (10:00 AM IST daily) or on-demand via `workflow_dispatch`.
