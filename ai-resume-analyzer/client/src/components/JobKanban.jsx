@@ -8,6 +8,9 @@ import {
   getKanbanStats,
   exportKanbanToCSV,
   resetToSampleJobs,
+  INTERVIEW_ROUNDS,
+  PRIORITIES,
+  getJobUrgency,
 } from "../services/kanbanService.js";
 
 export default function JobKanban({ onToast }) {
@@ -29,6 +32,9 @@ export default function JobKanban({ onToast }) {
     resumeVersion: "v1",
     location: "Remote",
     salary: "",
+    interviewRound: "",
+    dueDate: "",
+    priority: "Normal",
     notes: "",
     url: "",
   });
@@ -61,6 +67,9 @@ export default function JobKanban({ onToast }) {
       resumeVersion: "v1",
       location: "Remote",
       salary: "",
+      interviewRound: "",
+      dueDate: "",
+      priority: "Normal",
       notes: "",
       url: "",
     });
@@ -77,6 +86,9 @@ export default function JobKanban({ onToast }) {
       resumeVersion: job.resumeVersion || "v1",
       location: job.location || "Remote",
       salary: job.salary || "",
+      interviewRound: job.interviewRound || "",
+      dueDate: job.dueDate || "",
+      priority: job.priority || "Normal",
       notes: job.notes || "",
       url: job.url || "",
     });
@@ -442,6 +454,35 @@ export default function JobKanban({ onToast }) {
                           </div>
                         </div>
 
+                        {/* Interview Timeline, Urgency & Priority Badges */}
+                        {(job.interviewRound || job.dueDate || job.priority !== "Normal") && (
+                          <div className="flex flex-wrap items-center gap-1 text-[10px]">
+                            {job.priority === "Dream Job" && (
+                              <span className="bg-amber-50 text-amber-800 border border-amber-300 font-bold px-1.5 py-0.5 rounded">
+                                ⭐ Dream Job
+                              </span>
+                            )}
+                            {job.priority === "High Priority" && (
+                              <span className="bg-rose-50 text-rose-700 border border-rose-200 font-bold px-1.5 py-0.5 rounded">
+                                🔥 High Priority
+                              </span>
+                            )}
+                            {job.interviewRound && (
+                              <span className="bg-indigo-50 text-indigo-700 border border-indigo-100 font-semibold px-1.5 py-0.5 rounded">
+                                🎙️ {job.interviewRound}
+                              </span>
+                            )}
+                            {job.dueDate && (() => {
+                              const urg = getJobUrgency(job.dueDate);
+                              return urg ? (
+                                <span className={`font-bold px-1.5 py-0.5 rounded border ${urg.badge}`}>
+                                  ⏰ {urg.label}
+                                </span>
+                              ) : null;
+                            })()}
+                          </div>
+                        )}
+
                         {/* Location / Salary */}
                         {(job.location || job.salary) && (
                           <div className="flex flex-wrap items-center gap-1 text-[10px] text-slate-500">
@@ -647,6 +688,55 @@ export default function JobKanban({ onToast }) {
                     placeholder="e.g. $160k - $200k"
                     className="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
                   />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                    Interview Round
+                  </label>
+                  <select
+                    value={formData.interviewRound}
+                    onChange={(e) => setFormData({ ...formData, interviewRound: e.target.value })}
+                    className="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
+                  >
+                    <option value="">None / Pending</option>
+                    {INTERVIEW_ROUNDS.map((r) => (
+                      <option key={r} value={r}>
+                        {r}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                    Next Date / Deadline
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.dueDate}
+                    onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                    className="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                    Priority
+                  </label>
+                  <select
+                    value={formData.priority}
+                    onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                    className="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white"
+                  >
+                    {PRIORITIES.map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 

@@ -14,6 +14,37 @@ export const STAGES = [
   { id: "offer", label: "Offer Received", icon: "🎉", color: "emerald", badge: "bg-emerald-50 text-emerald-700 border-emerald-200" },
   { id: "rejected", label: "Archived", icon: "📁", color: "slate", badge: "bg-slate-100 text-slate-600 border-slate-200" },
 ];
+export const INTERVIEW_ROUNDS = [
+  "Recruiter Screen",
+  "Technical / Live Coding",
+  "System Design",
+  "Hiring Manager / Behavioral",
+  "Executive Final / Offer Review",
+];
+
+export const PRIORITIES = ["Normal", "High Priority", "Dream Job"];
+
+export function getJobUrgency(dueDateStr) {
+  if (!dueDateStr) return null;
+  const target = new Date(dueDateStr).getTime();
+  if (isNaN(target)) return null;
+  const diffDays = Math.ceil((target - Date.now()) / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) {
+    return { label: "Follow-up Overdue", badge: "bg-rose-50 text-rose-700 border-rose-200" };
+  }
+  if (diffDays === 0) {
+    return { label: "Scheduled Today", badge: "bg-amber-50 text-amber-700 border-amber-200 animate-pulse" };
+  }
+  if (diffDays === 1) {
+    return { label: "Tomorrow", badge: "bg-amber-50 text-amber-700 border-amber-200" };
+  }
+  if (diffDays <= 4) {
+    return { label: `In ${diffDays} days`, badge: "bg-indigo-50 text-indigo-700 border-indigo-200" };
+  }
+  return { label: new Date(dueDateStr).toLocaleDateString(), badge: "bg-slate-100 text-slate-600 border-slate-200" };
+}
+
 
 const INITIAL_SAMPLE_JOBS = [
   {
@@ -26,6 +57,9 @@ const INITIAL_SAMPLE_JOBS = [
     dateAdded: new Date(Date.now() - 4 * 86400000).toISOString(),
     location: "Remote / San Francisco",
     salary: "$180k - $220k",
+    interviewRound: "System Design",
+    dueDate: new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10),
+    priority: "Dream Job",
     notes: "Completed Technical Screen. System Design loop scheduled for next Tuesday.",
     url: "https://stripe.com/jobs",
   },
@@ -39,6 +73,9 @@ const INITIAL_SAMPLE_JOBS = [
     dateAdded: new Date(Date.now() - 2 * 86400000).toISOString(),
     location: "Remote",
     salary: "$160k - $190k",
+    interviewRound: "Recruiter Screen",
+    dueDate: new Date(Date.now() + 1 * 86400000).toISOString().slice(0, 10),
+    priority: "High Priority",
     notes: "Applied via Greenhouse with tailored cover letter.",
     url: "https://linear.app/careers",
   },
@@ -99,6 +136,9 @@ export function saveKanbanJob(jobData) {
     resumeVersion: jobData.resumeVersion || "v1",
     location: jobData.location || "Remote",
     salary: jobData.salary || "",
+    interviewRound: jobData.interviewRound || "",
+    dueDate: jobData.dueDate || "",
+    priority: jobData.priority || "Normal",
     notes: jobData.notes || "",
     url: jobData.url || "",
     dateAdded: now,
