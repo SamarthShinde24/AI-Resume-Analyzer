@@ -170,6 +170,28 @@ export default function RecruiterScreening({ onToast }) {
     if (onToast) onToast("Exported candidate shortlist as CSV!");
   };
 
+  const handleCopySummary = async () => {
+    if (!results?.leaderboard || results.leaderboard.length === 0) return;
+    const topCandidates = results.leaderboard.slice(0, 5);
+    const summaryLines = [
+      `🎯 *Candidate Screening Summary* (${results.summary?.total_screened || results.leaderboard.length} candidates evaluated)`,
+      `Avg Match Score: ${results.summary?.average_score || 0}% | Top Match: ${results.summary?.top_candidate || "N/A"} (${results.summary?.top_score || 0}%)`,
+      "",
+      "*Top Ranked Candidates:*",
+      ...topCandidates.map(
+        (c) =>
+          `• #${c.rank} ${c.candidate_name} - ${c.score}% Match (ATS: ${c.ats_health_score}%, Semantic: ${c.semantic_score}%)\n  Top Skills: ${c.matched_keywords.slice(0, 4).map((k) => k.term).join(", ") || "General Alignment"}`
+      ),
+    ];
+    const text = summaryLines.join("\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      if (onToast) onToast("Copied candidate screening brief to clipboard!");
+    } catch {
+      if (onToast) onToast("Summary ready!");
+    }
+  };
+
   const filteredLeaderboard = useMemo(() => {
     if (!results?.leaderboard) return [];
     return results.leaderboard.filter((c) => {
@@ -446,6 +468,15 @@ export default function RecruiterScreening({ onToast }) {
                 ))}
               </div>
 
+              <button
+                type="button"
+                onClick={handleCopySummary}
+                className="ml-2 px-3.5 py-1.5 rounded-xl text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition cursor-pointer flex items-center gap-1.5"
+                title="Copy formatted screening brief for Slack / Email to Hiring Manager"
+              >
+                <span>📋</span>
+                <span>Copy Summary</span>
+              </button>
               <button
                 type="button"
                 onClick={handleExportCsv}
