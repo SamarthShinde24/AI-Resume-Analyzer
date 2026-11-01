@@ -1,6 +1,7 @@
 import { useState, useRef, useMemo } from "react";
 import { batchScreenResumes, scrapeJobUrl } from "../api.js";
 import { SAMPLE_PRESETS } from "../data/samplePresets.js";
+import CandidateCompareModal from "./CandidateCompareModal.jsx";
 
 const DEFAULT_SAMPLE_JD = `Senior Full-Stack Engineer
 Company: Acme Cloud Solutions
@@ -30,6 +31,8 @@ export default function RecruiterScreening({ onToast }) {
   const [urlLoading, setUrlLoading] = useState(false);
   const [urlError, setUrlError] = useState(null);
   const [expandedCandId, setExpandedCandId] = useState(null);
+  const [selectedForCompare, setSelectedForCompare] = useState([]);
+  const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
 
   const fileInputRef = useRef(null);
 
@@ -468,6 +471,24 @@ export default function RecruiterScreening({ onToast }) {
                 ))}
               </div>
 
+              {results?.leaderboard && results.leaderboard.length >= 2 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (selectedForCompare.length >= 2) {
+                      setIsCompareModalOpen(true);
+                    } else {
+                      setSelectedForCompare(results.leaderboard.slice(0, 2));
+                      setIsCompareModalOpen(true);
+                    }
+                  }}
+                  className="ml-2 px-3.5 py-1.5 rounded-xl text-xs font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                  title="Compare candidates side-by-side in matrix"
+                >
+                  <span>⚖️</span>
+                  <span>{selectedForCompare.length >= 2 ? `Compare (${selectedForCompare.length})` : "Compare Top 2"}</span>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={handleCopySummary}
@@ -510,6 +531,25 @@ export default function RecruiterScreening({ onToast }) {
 
                       <div>
                         <div className="flex items-center gap-2">
+                          <label className="inline-flex items-center gap-1 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={selectedForCompare.some((c) => c.id === cand.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  if (selectedForCompare.length >= 3) {
+                                    if (onToast) onToast("You can compare up to 3 candidates simultaneously.");
+                                    return;
+                                  }
+                                  setSelectedForCompare([...selectedForCompare, cand]);
+                                } else {
+                                  setSelectedForCompare(selectedForCompare.filter((c) => c.id !== cand.id));
+                                }
+                              }}
+                              className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                            />
+                            <span className="text-[10px] font-bold text-slate-400 hover:text-indigo-600">Compare</span>
+                          </label>
                           <h4 className="text-base font-extrabold text-slate-900">
                             {cand.candidate_name}
                           </h4>
@@ -599,6 +639,13 @@ export default function RecruiterScreening({ onToast }) {
           </div>
         </div>
       )}
+      {/* Candidate Comparison Modal */}
+      <CandidateCompareModal
+        isOpen={isCompareModalOpen}
+        onClose={() => setIsCompareModalOpen(false)}
+        candidates={selectedForCompare}
+        onToast={onToast}
+      />
     </div>
   );
 }
