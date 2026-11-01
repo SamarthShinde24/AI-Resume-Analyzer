@@ -17,6 +17,8 @@ export default function JobKanban({ onToast }) {
   const [selectedStageFilter, setSelectedStageFilter] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingJob, setEditingJob] = useState(null);
+  const [draggedJobId, setDraggedJobId] = useState(null);
+  const [dragOverStageId, setDragOverStageId] = useState(null);
 
   // Form State for Add / Edit Modal
   const [formData, setFormData] = useState({
@@ -106,6 +108,41 @@ export default function JobKanban({ onToast }) {
     const updated = deleteKanbanJob(jobId);
     setJobs(updated);
     if (onToast) onToast(`Removed ${company} from pipeline.`);
+  };
+
+  const handleDragStart = (e, jobId) => {
+    e.dataTransfer.setData("text/plain", jobId);
+    e.dataTransfer.effectAllowed = "move";
+    setDraggedJobId(jobId);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedJobId(null);
+    setDragOverStageId(null);
+  };
+
+  const handleColumnDragOver = (e, stageId) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (dragOverStageId !== stageId) {
+      setDragOverStageId(stageId);
+    }
+  };
+
+  const handleColumnDragLeave = (e, stageId) => {
+    if (dragOverStageId === stageId) {
+      setDragOverStageId(null);
+    }
+  };
+
+  const handleColumnDrop = (e, stageId, stageLabel) => {
+    e.preventDefault();
+    const jobId = e.dataTransfer.getData("text/plain") || draggedJobId;
+    if (jobId) {
+      handleMoveStage(jobId, stageId, stageLabel);
+    }
+    setDraggedJobId(null);
+    setDragOverStageId(null);
   };
 
   const handleExportCSV = () => {
@@ -322,7 +359,14 @@ export default function JobKanban({ onToast }) {
           return (
             <div
               key={stage.id}
-              className="bg-slate-50/70 border border-slate-200 rounded-3xl p-4 flex flex-col min-h-[500px] shadow-2xs"
+              onDragOver={(e) => handleColumnDragOver(e, stage.id)}
+              onDragLeave={(e) => handleColumnDragLeave(e, stage.id)}
+              onDrop={(e) => handleColumnDrop(e, stage.id, stage.label)}
+              className={`border rounded-3xl p-4 flex flex-col min-h-[500px] shadow-2xs transition-all ${
+                dragOverStageId === stage.id
+                  ? "bg-indigo-50/70 border-indigo-400 ring-2 ring-indigo-400/30 scale-[1.01]"
+                  : "bg-slate-50/70 border-slate-200"
+              }`}
             >
               {/* Column Header */}
               <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-200/80">
@@ -355,14 +399,24 @@ export default function JobKanban({ onToast }) {
                     return (
                       <div
                         key={job.id}
-                        className="bg-white border border-slate-200 hover:border-indigo-300 rounded-2xl p-4 shadow-2xs space-y-2.5 transition group"
+                        draggable="true"
+                        onDragStart={(e) => handleDragStart(e, job.id)}
+                        onDragEnd={handleDragEnd}
+                        className={`bg-white border rounded-2xl p-4 shadow-2xs space-y-2.5 transition group cursor-grab active:cursor-grabbing ${
+                          draggedJobId === job.id
+                            ? "opacity-40 border-dashed border-indigo-400 scale-95"
+                            : "border-slate-200 hover:border-indigo-300"
+                        }`}
                       >
                         {/* Company & Actions */}
                         <div className="flex items-start justify-between gap-2">
                           <div>
-                            <h4 className="text-sm font-extrabold text-slate-900 group-hover:text-indigo-600 transition">
-                              {job.company}
-                            </h4>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-slate-300 group-hover:text-slate-500 transition select-none text-xs">⋮⋮</span>
+                              <h4 className="text-sm font-extrabold text-slate-900 group-hover:text-indigo-600 transition">
+                                {job.company}
+                              </h4>
+                            </div>
                             <p className="text-xs font-medium text-slate-600 line-clamp-1">
                               {job.role}
                             </p>
