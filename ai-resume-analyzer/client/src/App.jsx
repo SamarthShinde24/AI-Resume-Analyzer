@@ -19,7 +19,9 @@ import JobKanban from "./components/JobKanban.jsx";
 import RecruiterScreening from "./components/RecruiterScreening.jsx";
 import { analyzeResume } from "./api.js";
 import { getHistory, saveAnalysis, extractRoleTitle } from "./services/historyService.js";
-import { saveKanbanJob } from "./services/kanbanService.js";
+import { saveKanbanJob, getKanbanJobs } from "./services/kanbanService.js";
+import AuthModal from "./components/AuthModal.jsx";
+import { getStoredUser, clearSession, syncLocalDataToCloud } from "./services/authClient.js";
 
 export default function App() {
   const [result, setResult] = useState(null);
@@ -37,6 +39,29 @@ export default function App() {
   const [isTailoredDocxOpen, setIsTailoredDocxOpen] = useState(false);
   const [viewMode, setViewMode] = useState("analyzer"); // "analyzer" | "kanban" | "recruiter"
   const [compareVersions, setCompareVersions] = useState(null);
+  const [currentUser, setCurrentUser] = useState(() => getStoredUser());
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+
+  const handleAuthSuccess = async (user, autoSync) => {
+    setCurrentUser(user);
+    if (autoSync) {
+      try {
+                const currentKanban = getKanbanJobs();
+        const syncRes = await syncLocalDataToCloud(history, currentKanban);
+        if (syncRes?.synced) {
+          showToast(`Synced ${syncRes.synced.historyCount} analyses & ${syncRes.synced.kanbanCount} jobs to cloud SQLite!`);
+        }
+      } catch (err) {
+        console.warn("Auto-sync error:", err);
+      }
+    }
+  };
+
+  const handleLogout = () => {
+    clearSession();
+    setCurrentUser(null);
+    showToast("Signed out. Switched to local storage mode.");
+  };
 
   const showToast = (message) => {
     setToast({ message, id: Date.now() });
@@ -215,6 +240,35 @@ export default function App() {
                 </span>
               )}
             </button>
+
+            {currentUser ? (
+              <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-xs">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="font-bold text-emerald-800 text-[11px] max-w-[110px] truncate">
+                    {currentUser.name || currentUser.email.split("@")[0]}
+                  </span>
+                  <span className="text-[10px] text-emerald-600 font-semibold hidden sm:inline">☁️ Sync</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  title="Sign out of cloud session"
+                  className="text-xs text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+                >
+                  🚪
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsAuthOpen(true)}
+                className="text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5 shadow-2xs"
+              >
+                <span>👤 Sign In</span>
+                <span className="text-[10px] font-normal text-indigo-500 hidden sm:inline">• Sync</span>
+              </button>
+            )}
 
             {result && (
               <>
@@ -577,6 +631,14 @@ export default function App() {
         vOld={compareVersions?.vOld}
         vNew={compareVersions?.vNew}
         onRestoreVersion={handleRestoreVersion}
+      />
+
+      {/* Cloud Auth & SQLite Sync Modal */}
+      <AuthModal
+        isOpen={isAuthOpen}
+        onClose={() => setIsAuthOpen(false)}
+        onAuthSuccess={handleAuthSuccess}
+        onToast={showToast}
       />
 
       {/* Global Floating Toast */}
