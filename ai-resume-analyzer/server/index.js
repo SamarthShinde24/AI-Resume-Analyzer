@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 import analyzeRoute from "./routes/analyze.js";
 import authRoute from "./routes/auth.js";
+import userSyncRoute from "./routes/userSync.js";
 import { dbRepository } from "./services/db.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -25,6 +26,7 @@ app.use(express.json());
 
 app.use("/api", analyzeRoute);
 app.use("/api/auth", authRoute);
+app.use("/api/user", userSyncRoute);
 
 app.get("/health", (req, res) => {
   const dbStats = dbRepository.getStats();
