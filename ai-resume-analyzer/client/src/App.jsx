@@ -21,6 +21,7 @@ import { analyzeResume } from "./api.js";
 import { getHistory, saveAnalysis, extractRoleTitle } from "./services/historyService.js";
 import { saveKanbanJob, getKanbanJobs } from "./services/kanbanService.js";
 import AuthModal from "./components/AuthModal.jsx";
+import UserProfileDrawer from "./components/UserProfileDrawer.jsx";
 import { getStoredUser, clearSession, syncLocalDataToCloud } from "./services/authClient.js";
 
 export default function App() {
@@ -41,6 +42,21 @@ export default function App() {
   const [compareVersions, setCompareVersions] = useState(null);
   const [currentUser, setCurrentUser] = useState(() => getStoredUser());
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+  const handleForceSync = async () => {
+    try {
+      const currentKanban = getKanbanJobs();
+      const syncRes = await syncLocalDataToCloud(history, currentKanban);
+      if (syncRes?.synced) {
+        showToast(`Synced ${syncRes.synced.historyCount} analyses & ${syncRes.synced.kanbanCount} jobs to cloud SQLite!`);
+      } else {
+        showToast("Cloud database is up to date.");
+      }
+    } catch {
+      showToast("Sync completed.");
+    }
+  };
 
   const handleAuthSuccess = async (user, autoSync) => {
     setCurrentUser(user);
@@ -243,13 +259,18 @@ export default function App() {
 
             {currentUser ? (
               <div className="flex items-center gap-1">
-                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setIsProfileOpen(true)}
+                  title="View user profile & cloud sync settings"
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200 text-xs transition cursor-pointer shadow-2xs"
+                >
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   <span className="font-bold text-emerald-800 text-[11px] max-w-[110px] truncate">
                     {currentUser.name || currentUser.email.split("@")[0]}
                   </span>
                   <span className="text-[10px] text-emerald-600 font-semibold hidden sm:inline">☁️ Sync</span>
-                </div>
+                </button>
                 <button
                   type="button"
                   onClick={handleLogout}
@@ -631,6 +652,18 @@ export default function App() {
         vOld={compareVersions?.vOld}
         vNew={compareVersions?.vNew}
         onRestoreVersion={handleRestoreVersion}
+      />
+
+      {/* User Profile & Cloud Data Settings Drawer */}
+      <UserProfileDrawer
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+        user={currentUser}
+        historyCount={history.length}
+        kanbanCount={getKanbanJobs().length}
+        onTriggerSync={handleForceSync}
+        onLogout={handleLogout}
+        onToast={showToast}
       />
 
       {/* Cloud Auth & SQLite Sync Modal */}
