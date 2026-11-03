@@ -24,10 +24,12 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// API Routes
 app.use("/api", analyzeRoute);
 app.use("/api/auth", authRoute);
 app.use("/api/user", userSyncRoute);
 
+// System Health & Database Diagnostic
 app.get("/health", (req, res) => {
   const dbStats = dbRepository.getStats();
   res.json({
@@ -41,6 +43,26 @@ app.get("/health", (req, res) => {
     },
   });
 });
+
+// Production Single-Container Static Asset Serving
+const clientDistPath = path.resolve(__dirname, "../client/dist");
+const clientLocalDistPath = path.resolve(__dirname, "public");
+
+const activeStaticPath = fs.existsSync(clientDistPath)
+  ? clientDistPath
+  : fs.existsSync(clientLocalDistPath)
+  ? clientLocalDistPath
+  : null;
+
+if (activeStaticPath) {
+  app.use(express.static(activeStaticPath));
+  app.get("*", (req, res, next) => {
+    if (req.path.startsWith("/api") || req.path === "/health") {
+      return next();
+    }
+    res.sendFile(path.join(activeStaticPath, "index.html"));
+  });
+}
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
