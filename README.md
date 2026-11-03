@@ -1,5 +1,11 @@
 # AI Resume & ATS Analyzer
 
+[![Continuous Integration](https://github.com/SamarthShinde24/AI-Resume-Analyzer/actions/workflows/ci.yml/badge.svg)](https://github.com/SamarthShinde24/AI-Resume-Analyzer/actions)
+![Docker Ready](https://img.shields.io/badge/docker-containerized-2496ED.svg?logo=docker&logoColor=white)
+![Vitest Tests](https://img.shields.io/badge/tests-24%20passed-22c55e.svg?logo=vitest&logoColor=white)
+![SQLite WAL](https://img.shields.io/badge/database-sqlite--wal-003B57.svg?logo=sqlite&logoColor=white)
+![JWT Auth](https://img.shields.io/badge/auth-jwt%20%2B%20bcrypt-black.svg?logo=jsonwebtokens&logoColor=white)
+
 An enterprise-ready AI resume evaluation and ATS optimization engine. Upload a resume (PDF, Word DOCX, or TXT) and paste a target job description to get a comprehensive multi-dimensional ATS score, an interactive keyword gap checklist with placement tips, quantified bullet rewrites, and instant tailored resume generation.
 
 Powered by native structured JSON output across **Groq**, **Anthropic Claude**, and **OpenAI**.
@@ -7,6 +13,12 @@ Powered by native structured JSON output across **Groq**, **Anthropic Claude**, 
 ---
 
 ## Key Features
+
+- **Production Engineering & DevOps (New):**
+  - **Automated Test Suite (Vitest + Supertest):** 24 automated unit and integration tests covering document text extraction (`pdf-parse`, `mammoth`, plain text), corrupt buffer fault-tolerance, TF-IDF semantic cosine calculations, ATS parseability trap detector, and complete Express REST API routes.
+  - **Docker & Docker Compose Orchestration:** Multi-stage production `Dockerfile` compiling the Vite React client into a single optimized Node.js Alpine runtime with persistent SQLite database volume mounting (`docker-compose.yml`).
+  - **Cloud SQLite Database & User Authentication:** Server-side persistence using SQLite in WAL mode with prepared statements, bcrypt password hashing, and JWT session authorization for multi-device sync (`/api/auth` & `/api/user`).
+  - **GitHub Actions CI/CD Pipeline (`.github/workflows/ci.yml`):** Automated matrix builds, client bundle compilation, and Vitest test execution running on every push and pull request.
 
 - **Job Search Tracker & Recruiter SaaS Mode (New):**
   - **Job Application Kanban CRM Pipeline:** Mini application tracking CRM persisting jobs across 5 distinct stages (*Saved* → *Applied* → *Interviewing* → *Offer* → *Archived*).
@@ -92,6 +104,26 @@ Powered by native structured JSON output across **Groq**, **Anthropic Claude**, 
 
 ---
 
+## Docker Deployment (1-Click)
+
+Run the full stack (Vite frontend + Express backend + SQLite database) in a production container with persistent volumes:
+
+```bash
+# 1. Clone repository and create environment file
+cp ai-resume-analyzer/server/.env.example .env
+
+# 2. Build and boot Docker container
+docker compose up -d --build
+
+# 3. View status and logs
+docker compose ps
+docker compose logs -f
+```
+
+The production app is immediately live at `http://localhost:4000` with automatic SQLite data persistence in Docker volume `ai_resume_sqlite_data`.
+
+---
+
 ## Quickstart & Local Setup
 
 ### Single-Command Startup (Recommended)
@@ -123,6 +155,7 @@ The app will launch at:
 | `npm run install:all` | Installs dependencies for both `server` and `client` sub-packages |
 | `npm run dev:server` | Runs the Express server in watch mode |
 | `npm run dev:client` | Runs the Vite client development server |
+| `npm test` | Runs the 24-test Vitest automated unit and integration test suite |
 | `npm run build` | Builds the client production bundle |
 | `npm run start` | Starts the production Express server |
 
