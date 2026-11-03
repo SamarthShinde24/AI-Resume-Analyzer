@@ -11,6 +11,7 @@
     "install:all": "npm --prefix ai-resume-analyzer/server install && npm --prefix ai-resume-analyzer/client install",
     "build:client": "npm --prefix ai-resume-analyzer/client run build",
     "build": "npm run build:client",
+    "test": "npm --prefix ai-resume-analyzer/server run test",
     "start": "node ai-resume-analyzer/server/index.js",
     "run:tasks": "node scripts/scheduled-tasks.js"
   },
