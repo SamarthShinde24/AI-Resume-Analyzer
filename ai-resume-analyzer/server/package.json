@@ -9,13 +9,20 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.27.3",
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^13.0.3",
     "cheerio": "^1.2.0",
     "cors": "^2.8.5",
     "docx": "^9.15.0",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.3",
     "mammoth": "^1.8.0",
     "multer": "^1.4.5-lts.1",
     "pdf-parse": "^1.1.1"
+  },
+  "devDependencies": {
+    "supertest": "^7.3.1",
+    "vitest": "^5.1.0"
   }
 }
