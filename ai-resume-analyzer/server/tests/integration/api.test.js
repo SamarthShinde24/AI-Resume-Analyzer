@@ -10,6 +10,22 @@ describe("API Route Integration Tests (Supertest)", () => {
     expect(res.body.database.connected).toBe(true);
   });
 
+  describe("Developer API Documentation (/api/docs)", () => {
+    it("GET /api/docs returns 200 and renders HTML API Explorer", async () => {
+      const res = await request(app).get("/api/docs");
+      expect(res.status).toBe(200);
+      expect(res.headers["content-type"]).toContain("text/html");
+      expect(res.text).toContain("API Explorer");
+    });
+
+    it("GET /api/docs/spec.json returns 200 with OpenAPI 3.0 specification", async () => {
+      const res = await request(app).get("/api/docs/spec.json");
+      expect(res.status).toBe(200);
+      expect(res.body.openapi).toBe("3.0.3");
+      expect(res.body.paths["/api/analyze"]).toBeDefined();
+    });
+  });
+
   describe("Authentication API (/api/auth)", () => {
     const testEmail = `test_runner_${Date.now()}@example.com`;
     const testPassword = "securePassword123";

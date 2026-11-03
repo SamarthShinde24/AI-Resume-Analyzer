@@ -7,6 +7,7 @@ import fs from "node:fs";
 import analyzeRoute from "./routes/analyze.js";
 import authRoute from "./routes/auth.js";
 import userSyncRoute from "./routes/userSync.js";
+import docsRoute from "./routes/docs.js";
 import { dbRepository } from "./services/db.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -28,6 +29,7 @@ app.use(express.json());
 app.use("/api", analyzeRoute);
 app.use("/api/auth", authRoute);
 app.use("/api/user", userSyncRoute);
+app.use("/api/docs", docsRoute);
 
 // System Health & Database Diagnostic
 app.get("/health", (req, res) => {

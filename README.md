@@ -2,7 +2,7 @@
 
 [![Continuous Integration](https://github.com/SamarthShinde24/AI-Resume-Analyzer/actions/workflows/ci.yml/badge.svg)](https://github.com/SamarthShinde24/AI-Resume-Analyzer/actions)
 ![Docker Ready](https://img.shields.io/badge/docker-containerized-2496ED.svg?logo=docker&logoColor=white)
-![Vitest Tests](https://img.shields.io/badge/tests-24%20passed-22c55e.svg?logo=vitest&logoColor=white)
+![Vitest Tests](https://img.shields.io/badge/tests-26%20passed-22c55e.svg?logo=vitest&logoColor=white)
 ![SQLite WAL](https://img.shields.io/badge/database-sqlite--wal-003B57.svg?logo=sqlite&logoColor=white)
 ![JWT Auth](https://img.shields.io/badge/auth-jwt%20%2B%20bcrypt-black.svg?logo=jsonwebtokens&logoColor=white)
 
@@ -155,13 +155,19 @@ The app will launch at:
 | `npm run install:all` | Installs dependencies for both `server` and `client` sub-packages |
 | `npm run dev:server` | Runs the Express server in watch mode |
 | `npm run dev:client` | Runs the Vite client development server |
-| `npm test` | Runs the 24-test Vitest automated unit and integration test suite |
+| `npm test` | Runs the 26-test Vitest automated unit and integration test suite |
 | `npm run build` | Builds the client production bundle |
 | `npm run start` | Starts the production Express server |
 
 ---
 
-## API Endpoints
+## API Endpoints & Developer Explorer
+
+Explore, test, and integrate all REST endpoints via the built-in Interactive Developer Explorer:
+- **Interactive API Playground:** `http://localhost:4000/api/docs`
+- **OpenAPI 3.0 Specification:** `http://localhost:4000/api/docs/spec.json`
+
+---
 
 ### `POST /api/analyze`
 Accepts `multipart/form-data` with `resume` (file) and `jobDescription` (string).
