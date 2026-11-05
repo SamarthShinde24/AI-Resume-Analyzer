@@ -15,10 +15,11 @@ Powered by native structured JSON output across **Groq**, **Anthropic Claude**, 
 ## Key Features
 
 - **Production Engineering & DevOps (New):**
-  - **Automated Test Suite (Vitest + Supertest):** 24 automated unit and integration tests covering document text extraction (`pdf-parse`, `mammoth`, plain text), corrupt buffer fault-tolerance, TF-IDF semantic cosine calculations, ATS parseability trap detector, and complete Express REST API routes.
+  - **Automated Test Suite (Vitest + Supertest):** 26 automated unit and integration tests covering document text extraction (`pdf-parse`, `mammoth`, plain text), corrupt buffer fault-tolerance, TF-IDF semantic cosine calculations, ATS parseability trap detector, and complete Express REST API routes.
   - **Docker & Docker Compose Orchestration:** Multi-stage production `Dockerfile` compiling the Vite React client into a single optimized Node.js Alpine runtime with persistent SQLite database volume mounting (`docker-compose.yml`).
   - **Cloud SQLite Database & User Authentication:** Server-side persistence using SQLite in WAL mode with prepared statements, bcrypt password hashing, and JWT session authorization for multi-device sync (`/api/auth` & `/api/user`).
   - **GitHub Actions CI/CD Pipeline (`.github/workflows/ci.yml`):** Automated matrix builds, client bundle compilation, and Vitest test execution running on every push and pull request.
+  - **Workspace Agent Skills (`.agents/skills/`):** 4 active runbooks ([`.agents/README.md`](.agents/README.md)) standardizing ATS vector tuning, automated testing, production Docker deployment, and security hardening.
 
 - **Job Search Tracker & Recruiter SaaS Mode (New):**
   - **Job Application Kanban CRM Pipeline:** Mini application tracking CRM persisting jobs across 5 distinct stages (*Saved* → *Applied* → *Interviewing* → *Offer* → *Archived*).
@@ -158,6 +159,21 @@ The app will launch at:
 | `npm test` | Runs the 26-test Vitest automated unit and integration test suite |
 | `npm run build` | Builds the client production bundle |
 | `npm run start` | Starts the production Express server |
+
+---
+
+## Workspace Skills & Agent Runbooks (`.agents/skills/`)
+
+The repository includes standard agent runbooks under [`.agents/skills/`](.agents/skills/) to assist developers and autonomous agents in maintaining and scaling the platform:
+
+| Skill | Runbook Path | Description |
+| :--- | :--- | :--- |
+| **`ats-skills-engine`** | [`.agents/skills/ats-skills-engine/SKILL.md`](.agents/skills/ats-skills-engine/SKILL.md) | Vector cosine weighting, TF-IDF tuning, and ATS trap heuristics |
+| **`automated-testing`** | [`.agents/skills/automated-testing/SKILL.md`](.agents/skills/automated-testing/SKILL.md) | Vitest & Supertest procedures, mock buffers, and CI regression checks |
+| **`production-deploy`** | [`.agents/skills/production-deploy/SKILL.md`](.agents/skills/production-deploy/SKILL.md) | Multi-stage Docker operations, SQLite persistence, and cloud hosting |
+| **`security-hardening`** | [`.agents/skills/security-hardening/SKILL.md`](.agents/skills/security-hardening/SKILL.md) | Upload ceilings, string sanitization, JWT auth, and SQL injection defense |
+
+For details on progressive disclosure and execution standards, see the [Agent Documentation](.agents/README.md).
 
 ---
 
