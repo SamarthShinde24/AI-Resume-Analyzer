@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
 import dotenv from "dotenv";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -22,6 +23,29 @@ if (fs.existsSync(envPath)) {
 }
 
 const app = express();
+
+// Production HTTP Security Headers via Helmet (CSP, MIME-sniffing defense, Iframe hardening)
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
+        imgSrc: ["'self'", "data:", "blob:"],
+        connectSrc: ["'self'"],
+        frameAncestors: ["'none'"],
+        objectSrc: ["'none'"],
+        upgradeInsecureRequests: [],
+      },
+    },
+    xContentTypeOptions: true, // Prevents MIME-type sniffing (nosniff)
+    xFrameOptions: { action: "deny" }, // Clickjacking protection (X-Frame-Options: DENY)
+    crossOriginEmbedderPolicy: false,
+  })
+);
+
 app.use(cors());
 app.use(express.json());
 
@@ -67,8 +91,10 @@ if (activeStaticPath) {
 }
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+if (process.env.NODE_ENV !== "test") {
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+}
 
 export default app;

@@ -52,10 +52,13 @@ export const OPENAPI_SPEC = {
     },
     "/api/batch-screen": {
       post: {
-        summary: "Recruiter Batch Resume Screening",
-        description: "Screens up to 15 resumes simultaneously against 1 job description to produce candidate leaderboards.",
+        summary: "Recruiter Batch Resume Screening (RBAC Protected)",
+        description: "Screens up to 15 resumes simultaneously against 1 job description. Restricted to accounts with role 'recruiter' or 'admin'.",
+        security: [{ bearerAuth: [] }],
         responses: {
           200: { description: "Ranked candidate leaderboard with semantic scores and ATS health." },
+          401: { description: "Missing or invalid Bearer token." },
+          403: { description: "Forbidden: Account lacks recruiter or admin role." },
         },
       },
     },

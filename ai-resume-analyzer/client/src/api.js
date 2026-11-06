@@ -171,8 +171,15 @@ export async function batchScreenResumes(files, jobDescription) {
   }
   formData.append("jobDescription", jobDescription);
 
+  const token = localStorage.getItem("ai_resume_auth_token");
+  const headers = {};
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const res = await fetch("/api/batch-screen", {
     method: "POST",
+    headers,
     body: formData,
   });
 

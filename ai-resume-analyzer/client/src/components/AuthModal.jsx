@@ -6,6 +6,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, onToast }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [role, setRole] = useState("job_seeker"); // "job_seeker" | "recruiter"
   const [autoSync, setAutoSync] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -20,11 +21,11 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, onToast }) {
     try {
       let result;
       if (mode === "register") {
-        result = await registerUser({ email, password, name });
-        if (onToast) onToast(`Welcome aboard, ${result.user.name || result.user.email}! Account created.`);
+        result = await registerUser({ email, password, name, role });
+        if (onToast) onToast(`Welcome aboard, ${result.user.name || result.user.email}! Account created as ${result.user.role}.`);
       } else {
         result = await loginUser({ email, password });
-        if (onToast) onToast(`Welcome back, ${result.user.name || result.user.email}! Signed in.`);
+        if (onToast) onToast(`Welcome back, ${result.user.name || result.user.email}! Signed in (${result.user.role || "job_seeker"}).`);
       }
 
       if (onAuthSuccess) {
@@ -97,18 +98,62 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, onToast }) {
           )}
 
           {mode === "register" && (
-            <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                Full Name
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Alex Morgan"
-                className="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-              />
-            </div>
+            <>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. Alex Morgan"
+                  className="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                  Account Role (RBAC)
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setRole("job_seeker")}
+                    className={`p-2.5 rounded-xl border text-xs font-semibold text-left transition cursor-pointer ${
+                      role === "job_seeker"
+                        ? "border-indigo-600 bg-indigo-50/60 text-indigo-900 ring-2 ring-indigo-500/20"
+                        : "border-slate-200 hover:border-slate-300 text-slate-600 bg-white"
+                    }`}
+                  >
+                    <div className="font-bold flex items-center gap-1.5 text-xs">
+                      <span>👤</span>
+                      <span>Job Seeker</span>
+                    </div>
+                    <div className="text-[10px] text-slate-500 font-normal mt-0.5">
+                      ATS Audit, Live Editor & Kanban
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRole("recruiter")}
+                    className={`p-2.5 rounded-xl border text-xs font-semibold text-left transition cursor-pointer ${
+                      role === "recruiter"
+                        ? "border-indigo-600 bg-indigo-50/60 text-indigo-900 ring-2 ring-indigo-500/20"
+                        : "border-slate-200 hover:border-slate-300 text-slate-600 bg-white"
+                    }`}
+                  >
+                    <div className="font-bold flex items-center gap-1.5 text-xs">
+                      <span>🏢</span>
+                      <span>Recruiter</span>
+                    </div>
+                    <div className="text-[10px] text-slate-500 font-normal mt-0.5">
+                      Batch Screening & Leaderboard
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </>
           )}
 
           <div>

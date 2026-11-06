@@ -19,6 +19,14 @@ const db = new Database(dbPath);
 db.pragma("journal_mode = WAL");
 db.pragma("foreign_keys = ON");
 
+// Role-Based Access Control (RBAC) Constants
+export const ROLES = {
+  JOB_SEEKER: "job_seeker",
+  RECRUITER: "recruiter",
+  ADMIN: "admin",
+};
+export const VALID_ROLES = Object.values(ROLES);
+
 // Initialize Schema
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
@@ -26,6 +34,7 @@ db.exec(`
     email TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
     name TEXT,
+    role TEXT NOT NULL DEFAULT 'job_seeker',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
@@ -65,18 +74,32 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_kanban_user ON kanban_applications(user_id);
 `);
 
+// Safe Migration: Ensure role column exists on users table in existing databases
+try {
+  const userCols = db.prepare("PRAGMA table_info(users)").all();
+  if (!userCols.some((col) => col.name === "role")) {
+    db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'job_seeker'");
+  }
+} catch (err) {
+  // column might already exist or PRAGMA check completed
+}
+
 // Prepared Statements for Performance
 const stmtInsertUser = db.prepare(`
-  INSERT INTO users (id, email, password_hash, name)
-  VALUES (@id, @email, @password_hash, @name)
+  INSERT INTO users (id, email, password_hash, name, role)
+  VALUES (@id, @email, @password_hash, @name, @role)
 `);
 
 const stmtFindUserByEmail = db.prepare(`
-  SELECT * FROM users WHERE email = ?
+  SELECT id, email, password_hash, name, role, created_at FROM users WHERE email = ?
 `);
 
 const stmtFindUserById = db.prepare(`
-  SELECT id, email, name, created_at FROM users WHERE id = ?
+  SELECT id, email, name, role, created_at FROM users WHERE id = ?
+`);
+
+const stmtUpdateUserRole = db.prepare(`
+  UPDATE users SET role = ? WHERE id = ?
 `);
 
 const stmtInsertHistory = db.prepare(`
@@ -135,14 +158,24 @@ const stmtDeleteKanban = db.prepare(`
 // Repository API
 export const dbRepository = {
   // Users
-  createUser({ id, email, passwordHash, name }) {
+  createUser({ id, email, passwordHash, name, role = ROLES.JOB_SEEKER }) {
+    const assignedRole = VALID_ROLES.includes(role) ? role : ROLES.JOB_SEEKER;
     stmtInsertUser.run({
       id,
       email: email.toLowerCase().trim(),
       password_hash: passwordHash,
       name: name || null,
+      role: assignedRole,
     });
     return this.findUserById(id);
+  },
+
+  updateUserRole(userId, newRole) {
+    if (!VALID_ROLES.includes(newRole)) {
+      throw new Error(`Invalid role: ${newRole}. Valid roles are: ${VALID_ROLES.join(", ")}`);
+    }
+    stmtUpdateUserRole.run(newRole, userId);
+    return this.findUserById(userId);
   },
 
   findUserByEmail(email) {

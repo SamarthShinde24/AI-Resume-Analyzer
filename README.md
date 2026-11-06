@@ -2,7 +2,8 @@
 
 [![Continuous Integration](https://github.com/SamarthShinde24/AI-Resume-Analyzer/actions/workflows/ci.yml/badge.svg)](https://github.com/SamarthShinde24/AI-Resume-Analyzer/actions)
 ![Docker Ready](https://img.shields.io/badge/docker-containerized-2496ED.svg?logo=docker&logoColor=white)
-![Vitest Tests](https://img.shields.io/badge/tests-26%20passed-22c55e.svg?logo=vitest&logoColor=white)
+![Vitest Tests](https://img.shields.io/badge/tests-40%20passed-22c55e.svg?logo=vitest&logoColor=white)
+![Security Hardened](https://img.shields.io/badge/security-helmet%20%2B%20rate--limit%20%2B%20rbac-blueviolet.svg?logo=shield)
 ![SQLite WAL](https://img.shields.io/badge/database-sqlite--wal-003B57.svg?logo=sqlite&logoColor=white)
 ![JWT Auth](https://img.shields.io/badge/auth-jwt%20%2B%20bcrypt-black.svg?logo=jsonwebtokens&logoColor=white)
 
@@ -15,11 +16,16 @@ Powered by native structured JSON output across **Groq**, **Anthropic Claude**, 
 ## Key Features
 
 - **Production Engineering & DevOps (New):**
-  - **Automated Test Suite (Vitest + Supertest):** 26 automated unit and integration tests covering document text extraction (`pdf-parse`, `mammoth`, plain text), corrupt buffer fault-tolerance, TF-IDF semantic cosine calculations, ATS parseability trap detector, and complete Express REST API routes.
+  - **Automated Test Suite (Vitest + Supertest):** 40 automated unit and integration tests covering document text extraction (`pdf-parse`, `mammoth`, plain text), corrupt buffer fault-tolerance, TF-IDF semantic cosine calculations, ATS parseability trap detector, sliding window rate limiters, Helmet security headers, and RBAC authorization routes.
   - **Docker & Docker Compose Orchestration:** Multi-stage production `Dockerfile` compiling the Vite React client into a single optimized Node.js Alpine runtime with persistent SQLite database volume mounting (`docker-compose.yml`).
   - **Cloud SQLite Database & User Authentication:** Server-side persistence using SQLite in WAL mode with prepared statements, bcrypt password hashing, and JWT session authorization for multi-device sync (`/api/auth` & `/api/user`).
   - **GitHub Actions CI/CD Pipeline (`.github/workflows/ci.yml`):** Automated matrix builds, client bundle compilation, and Vitest test execution running on every push and pull request.
   - **Workspace Agent Skills (`.agents/skills/`):** 4 active runbooks ([`.agents/README.md`](.agents/README.md)) standardizing ATS vector tuning, automated testing, production Docker deployment, and security hardening.
+
+- **Production Security Hardening & Rate Limiting (New):**
+  - **Sliding-Window Rate Limiting (`express-rate-limit`):** Protects sensitive brute-force targets (`POST /api/auth/login`) with an IP-based sliding window (15 attempts / 15 min) and shields compute-intensive LLM endpoints (`/api/analyze`, `/api/tailor`, `/api/cover-letter`) against API token exhaustion and DoS (30 requests / 15 min), emitting RFC standard `RateLimit-*` headers.
+  - **HTTP Security Headers (`helmet`):** Configures Content Security Policy (CSP), suppresses MIME-sniffing exploits (`X-Content-Type-Options: nosniff`), and hardens iframe clickjacking resistance (`X-Frame-Options: DENY`, `frameAncestors: ["'none'"]`).
+  - **Role-Based Access Control (RBAC):** Native support for `job_seeker`, `recruiter`, and `admin` user tiers in SQLite and JWT claims, gating SaaS candidate batch screening (`/api/batch-screen`) behind `requireRole("recruiter", "admin")`.
 
 - **Job Search Tracker & Recruiter SaaS Mode (New):**
   - **Job Application Kanban CRM Pipeline:** Mini application tracking CRM persisting jobs across 5 distinct stages (*Saved* → *Applied* → *Interviewing* → *Offer* → *Archived*).
@@ -156,7 +162,7 @@ The app will launch at:
 | `npm run install:all` | Installs dependencies for both `server` and `client` sub-packages |
 | `npm run dev:server` | Runs the Express server in watch mode |
 | `npm run dev:client` | Runs the Vite client development server |
-| `npm test` | Runs the 26-test Vitest automated unit and integration test suite |
+| `npm test` | Runs the 40-test Vitest automated unit and integration test suite |
 | `npm run build` | Builds the client production bundle |
 | `npm run start` | Starts the production Express server |
 

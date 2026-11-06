@@ -25,7 +25,7 @@ export function verifyToken(token) {
   }
 }
 
-export async function registerUser({ email, password, name }) {
+export async function registerUser({ email, password, name, role }) {
   if (!email || !email.includes("@")) {
     throw new Error("A valid email address is required.");
   }
@@ -47,12 +47,14 @@ export async function registerUser({ email, password, name }) {
     email: normalizedEmail,
     passwordHash,
     name: name?.trim() || null,
+    role,
   });
 
   const token = generateToken({
     id: createdUser.id,
     email: createdUser.email,
     name: createdUser.name,
+    role: createdUser.role,
   });
 
   return {
@@ -81,6 +83,7 @@ export async function loginUser({ email, password }) {
     id: userRecord.id,
     email: userRecord.email,
     name: userRecord.name,
+    role: userRecord.role || "job_seeker",
     created_at: userRecord.created_at,
   };
 
@@ -88,6 +91,7 @@ export async function loginUser({ email, password }) {
     id: safeUser.id,
     email: safeUser.email,
     name: safeUser.name,
+    role: safeUser.role,
   });
 
   return {

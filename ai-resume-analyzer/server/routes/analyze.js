@@ -12,6 +12,8 @@ import { computeSemanticSimilarity } from "../services/semanticEngine.js";
 import { detectAtsTraps } from "../services/atsTrapDetector.js";
 import { scrapeJobPosting } from "../services/jobScraper.js";
 import { generateTailoredDocx, applyBulletRewrites } from "../services/documentGenerator.js";
+import { llmRateLimiter } from "../middleware/rateLimiter.js";
+import { requireRole } from "../middleware/authMiddleware.js";
 
 const router = Router();
 
@@ -97,7 +99,7 @@ const batchUploadMiddleware = (req, res, next) => {
   });
 };
 
-router.post("/analyze", uploadMiddleware, async (req, res) => {
+router.post("/analyze", llmRateLimiter, uploadMiddleware, async (req, res) => {
   try {
     const { jobDescription } = req.body;
     const file = req.file;
@@ -152,7 +154,7 @@ router.post("/analyze", uploadMiddleware, async (req, res) => {
   }
 });
 
-router.post("/tailor", uploadMiddleware, async (req, res) => {
+router.post("/tailor", llmRateLimiter, uploadMiddleware, async (req, res) => {
   try {
     const { jobDescription } = req.body;
     let { resumeText } = req.body;
@@ -190,7 +192,7 @@ router.post("/tailor", uploadMiddleware, async (req, res) => {
   }
 });
 
-router.post("/interview-prep", uploadMiddleware, async (req, res) => {
+router.post("/interview-prep", llmRateLimiter, uploadMiddleware, async (req, res) => {
   try {
     const { jobDescription } = req.body;
     let { resumeText } = req.body;
@@ -228,7 +230,7 @@ router.post("/interview-prep", uploadMiddleware, async (req, res) => {
   }
 });
 
-router.post("/cover-letter", uploadMiddleware, async (req, res) => {
+router.post("/cover-letter", llmRateLimiter, uploadMiddleware, async (req, res) => {
   try {
     const { jobDescription } = req.body;
     let { resumeText } = req.body;
@@ -456,7 +458,7 @@ function formatBytes(bytes) {
   return `${(kb / 1024).toFixed(2)} MB`;
 }
 
-router.post("/batch-screen", batchUploadMiddleware, async (req, res) => {
+router.post("/batch-screen", requireRole("recruiter", "admin"), batchUploadMiddleware, async (req, res) => {
   try {
     const { jobDescription } = req.body;
     const files = req.files;

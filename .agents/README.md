@@ -49,6 +49,7 @@ This directory houses the domain-specific **Agent Skills** tailored to the **AI 
   - 30,000-character text truncation preventing ReDoS and LLM prompt injection / context exhaustion.
   - Prepared SQL statements (`better-sqlite3`) providing zero SQL injection surface.
   - Bcrypt (10 salt rounds) password encryption and JWT Bearer token authentication middleware.
+  - Sliding window rate limiting (`express-rate-limit`), Helmet HTTP security headers (CSP, nosniff, frameguard), and Role-Based Access Control (RBAC) gating.
 
 ---
 

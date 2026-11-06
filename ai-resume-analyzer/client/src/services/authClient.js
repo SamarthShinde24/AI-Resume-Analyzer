@@ -30,11 +30,11 @@ export function clearSession() {
   localStorage.removeItem(USER_KEY);
 }
 
-export async function registerUser({ email, password, name }) {
+export async function registerUser({ email, password, name, role = "job_seeker" }) {
   const res = await fetch(`${API_BASE}/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password, name }),
+    body: JSON.stringify({ email, password, name, role }),
   });
 
   const data = await res.json();

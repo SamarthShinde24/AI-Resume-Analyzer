@@ -269,7 +269,7 @@ export default function App() {
                   <span className="font-bold text-emerald-800 text-[11px] max-w-[110px] truncate">
                     {currentUser.name || currentUser.email.split("@")[0]}
                   </span>
-                  <span className="text-[10px] text-emerald-600 font-semibold hidden sm:inline">☁️ Sync</span>
+                  <span className="text-[10px] text-emerald-600 font-semibold hidden sm:inline">{currentUser.role === "recruiter" ? "🏢 Recruiter" : currentUser.role === "admin" ? "⚡ Admin" : "👤 Seeker"}</span>
                 </button>
                 <button
                   type="button"

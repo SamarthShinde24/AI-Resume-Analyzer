@@ -1,5 +1,6 @@
 import { useState, useRef, useMemo } from "react";
 import { batchScreenResumes, scrapeJobUrl } from "../api.js";
+import { getStoredUser } from "../services/authClient.js";
 import { SAMPLE_PRESETS } from "../data/samplePresets.js";
 import CandidateCompareModal from "./CandidateCompareModal.jsx";
 
@@ -44,6 +45,8 @@ export const WEIGHT_PRESETS = {
   },
 };
 export default function RecruiterScreening({ onToast }) {
+  const storedUser = getStoredUser();
+  const isRecruiter = storedUser?.role === "recruiter" || storedUser?.role === "admin";
   const [jobDescription, setJobDescription] = useState(DEFAULT_SAMPLE_JD);
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -294,6 +297,21 @@ export default function RecruiterScreening({ onToast }) {
             </button>
           </div>
         </div>
+
+        {!isRecruiter && (
+          <div className="mt-4 p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <span className="text-base">🔒</span>
+              <div>
+                <span className="font-bold">Role-Based Access Control: </span>
+                <span>
+                  Batch screening requires an account with role <code className="px-1.5 py-0.5 rounded bg-amber-100 font-mono text-[11px] font-bold">recruiter</code> or <code className="px-1.5 py-0.5 rounded bg-amber-100 font-mono text-[11px] font-bold">admin</code>.
+                  {storedUser ? ` You are currently signed in as '${storedUser.role}'.` : " You are currently in Guest mode."}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Inputs Layout: Job Description & Multi-File Dropzone */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 mt-5">
