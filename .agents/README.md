@@ -24,6 +24,7 @@ This directory houses the domain-specific **Agent Skills** tailored to the **AI 
   - TF-IDF vectorization with sub-linear TF scaling and technical bigram tokens (`machine learning`, `ci cd`, `tailwind css`).
   - ATS parseability trap detector heuristics: contact info checks, section header detection, pronoun deductions, and passive voice penalties.
   - LLM prompt engineering guidelines and strict JSON schema enforcement (`response_format: { type: "json_object" }`).
+  - Native binary PDF generation pipeline (`pdfkit`) streaming tailored resumes and compliance audit sheets.
 
 ### 2. Automated Testing Suite (`automated-testing`)
 - **Location:** [`.agents/skills/automated-testing/SKILL.md`](./skills/automated-testing/SKILL.md)

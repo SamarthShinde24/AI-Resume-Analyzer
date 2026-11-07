@@ -2,7 +2,8 @@
 
 [![Continuous Integration](https://github.com/SamarthShinde24/AI-Resume-Analyzer/actions/workflows/ci.yml/badge.svg)](https://github.com/SamarthShinde24/AI-Resume-Analyzer/actions)
 ![Docker Ready](https://img.shields.io/badge/docker-containerized-2496ED.svg?logo=docker&logoColor=white)
-![Vitest Tests](https://img.shields.io/badge/tests-40%20passed-22c55e.svg?logo=vitest&logoColor=white)
+![Vitest Tests](https://img.shields.io/badge/tests-51%20passed-22c55e.svg?logo=vitest&logoColor=white)
+![PDFKit Engine](https://img.shields.io/badge/pdf--export-pdfkit%20binary-E11D48.svg?logo=adobeacrobatreader&logoColor=white)
 ![Security Hardened](https://img.shields.io/badge/security-helmet%20%2B%20rate--limit%20%2B%20rbac-blueviolet.svg?logo=shield)
 ![SQLite WAL](https://img.shields.io/badge/database-sqlite--wal-003B57.svg?logo=sqlite&logoColor=white)
 ![JWT Auth](https://img.shields.io/badge/auth-jwt%20%2B%20bcrypt-black.svg?logo=jsonwebtokens&logoColor=white)
@@ -16,7 +17,7 @@ Powered by native structured JSON output across **Groq**, **Anthropic Claude**, 
 ## Key Features
 
 - **Production Engineering & DevOps (New):**
-  - **Automated Test Suite (Vitest + Supertest):** 40 automated unit and integration tests covering document text extraction (`pdf-parse`, `mammoth`, plain text), corrupt buffer fault-tolerance, TF-IDF semantic cosine calculations, ATS parseability trap detector, sliding window rate limiters, Helmet security headers, and RBAC authorization routes.
+  - **Automated Test Suite (Vitest + Supertest):** 51 automated unit and integration tests covering document text extraction (`pdf-parse`, `mammoth`, plain text), corrupt buffer fault-tolerance, TF-IDF semantic cosine calculations, ATS parseability trap detector, sliding window rate limiters, Helmet security headers, RBAC authorization, and native server-side PDFKit export.
   - **Docker & Docker Compose Orchestration:** Multi-stage production `Dockerfile` compiling the Vite React client into a single optimized Node.js Alpine runtime with persistent SQLite database volume mounting (`docker-compose.yml`).
   - **Cloud SQLite Database & User Authentication:** Server-side persistence using SQLite in WAL mode with prepared statements, bcrypt password hashing, and JWT session authorization for multi-device sync (`/api/auth` & `/api/user`).
   - **GitHub Actions CI/CD Pipeline (`.github/workflows/ci.yml`):** Automated matrix builds, client bundle compilation, and Vitest test execution running on every push and pull request.
@@ -26,6 +27,11 @@ Powered by native structured JSON output across **Groq**, **Anthropic Claude**, 
   - **Sliding-Window Rate Limiting (`express-rate-limit`):** Protects sensitive brute-force targets (`POST /api/auth/login`) with an IP-based sliding window (15 attempts / 15 min) and shields compute-intensive LLM endpoints (`/api/analyze`, `/api/tailor`, `/api/cover-letter`) against API token exhaustion and DoS (30 requests / 15 min), emitting RFC standard `RateLimit-*` headers.
   - **HTTP Security Headers (`helmet`):** Configures Content Security Policy (CSP), suppresses MIME-sniffing exploits (`X-Content-Type-Options: nosniff`), and hardens iframe clickjacking resistance (`X-Frame-Options: DENY`, `frameAncestors: ["'none'"]`).
   - **Role-Based Access Control (RBAC):** Native support for `job_seeker`, `recruiter`, and `admin` user tiers in SQLite and JWT claims, gating SaaS candidate batch screening (`/api/batch-screen`) behind `requireRole("recruiter", "admin")`.
+
+- **Native Binary PDF Generation Engine (pdfkit) (New):**
+  - **Server-Side Binary PDF Streaming:** Generates ATS-compliant, executive PDF documents directly on the server without relying on client browser print dialogs or external headless browsers.
+  - **1-Click Tailored Resume PDF (`POST /api/export-pdf`):** Compiles the candidate's resume with action-oriented AI rewrites applied, standard 45pt ATS margins, clean typography, and dynamic page numbering.
+  - **1-Click Comprehensive ATS Audit Sheet PDF (`POST /api/export-audit-pdf`):** Generates recruiter-grade PDF compliance sheets featuring circular score gauges, 4-tier methodology breakdown cards, missing keyword gap placement tips, and before/after bullet optimization matrices.
 
 - **Job Search Tracker & Recruiter SaaS Mode (New):**
   - **Job Application Kanban CRM Pipeline:** Mini application tracking CRM persisting jobs across 5 distinct stages (*Saved* → *Applied* → *Interviewing* → *Offer* → *Archived*).
@@ -48,7 +54,7 @@ Powered by native structured JSON output across **Groq**, **Anthropic Claude**, 
   - **Real-Time Keyword Gap Lighting:** Missing skills light up in vibrant emerald green with an animated `+Boost` badge the exact second they are typed into the editor.
   - **Instant Re-Scoring Engine (`/api/rescore-live`):** Zero-latency local regex matching blended with debounced TF-IDF vector cosine calculations and ATS parseability health diagnostics.
   - **1-Click "Apply All AI Rewrites":** Automatically locates weak bullet points within the resume text and replaces them with their AI-optimized, metric-driven rewrites.
-  - **One-Click "Download Tailored Resume" (.docx / .pdf):** Word document generation engine (`docx`) outputting ATS-compliant `.docx` files with 1-inch margins, executive typography, section dividers, and clean bullet formatting, plus browser print-to-PDF support.
+  - **One-Click "Download Tailored Resume" (.docx / .pdf):** Native server-side Word (`docx`) and binary PDF (`pdfkit`) generation engines outputting ATS-compliant documents with 45pt margins, executive typography, section dividers, and clean bullet formatting.
   - **Job Posting URL Web Scraper (`/api/scrape-job`):** Paste any public job posting URL (Greenhouse, Lever, Workday, Indeed, LinkedIn, or generic career pages) to automatically fetch, sanitize, and populate the job description with company metadata.
 
 - **Next-Gen AI & ATS Intelligence (Deep Tech):**
@@ -162,7 +168,7 @@ The app will launch at:
 | `npm run install:all` | Installs dependencies for both `server` and `client` sub-packages |
 | `npm run dev:server` | Runs the Express server in watch mode |
 | `npm run dev:client` | Runs the Vite client development server |
-| `npm test` | Runs the 40-test Vitest automated unit and integration test suite |
+| `npm test` | Runs the 51-test Vitest automated unit and integration test suite |
 | `npm run build` | Builds the client production bundle |
 | `npm run start` | Starts the production Express server |
 
@@ -239,6 +245,14 @@ Returns:
 ### `POST /api/export-docx`
 Accepts JSON `{ resumeText, weakBullets, candidateName, autoApplyRewrites }`.
 Returns binary Microsoft Word document with `Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document` with all weak bullets automatically substituted with their AI rewrites.
+
+### `POST /api/export-pdf`
+Accepts JSON `{ resumeText, weakBullets, candidateName, autoApplyRewrites }`.
+Returns binary PDF document (`application/pdf`) with `Content-Disposition: attachment; filename="${candidateName}.pdf"`. Generates an executive, ATS-compliant PDF with AI bullet rewrites applied directly on the server.
+
+### `POST /api/export-audit-pdf`
+Accepts JSON `{ result, meta }`.
+Returns binary PDF document (`application/pdf`) with `Content-Disposition: attachment; filename="ATS_Audit_Report_${role}.pdf"`. Compiles an executive ATS compliance audit sheet with visual score gauge, 4-tier score breakdown, keyword gap checklist, and before/after rewrite matrix.
 
 ### `POST /api/rescore-live`
 Accepts JSON `{ resumeText, jobDescription, originalChecklist, baseScore }`.

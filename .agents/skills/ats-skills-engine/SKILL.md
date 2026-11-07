@@ -18,6 +18,7 @@ The **ATS Skills Engine** is the core intelligence layer of the AI Resume & ATS 
 | **LLM Evaluation Engine** | `server/services/llm.js` | Multi-dimensional scoring, keyword gap checklist, and bullet rewrites. |
 | **Live Re-scoring Engine** | `server/routes/analyze.js` (`/api/rescore-live`) | Sub-10ms deterministic live score adjustments for the in-browser editor. |
 | **Batch Screening Engine** | `server/routes/analyze.js` (`/api/batch-screen`) | Multi-resume candidate ranking with dynamic recruiter weight presets. |
+| **Binary PDF Generator** | `server/services/pdfGenerator.js` | Server-side binary PDF streaming (`pdfkit`) for tailored resumes and audit sheets. |
 
 ---
 
@@ -117,3 +118,21 @@ When adjusting LLM evaluation prompts in `server/prompts/`:
    - Anthropic: Strict system prompt JSON isolation.
 2. **Deterministic Fallback:** Never rely solely on LLM regex extraction. Always sanitize code fences (` ```json `) using regex cleanup before `JSON.parse()`.
 3. **Quantifiable Bullet Rewrites:** Prompt instructions must demand metrics (percentages, dollar values, throughput scale) in every rewrite recommendation.
+
+---
+
+## 7. Native Binary PDF Export Pipeline (`pdfkit`)
+
+The PDF generation engine compiles server-side binary PDF buffers directly in Node.js without browser print dependencies:
+
+### 7.1 Tailored Resume PDF (`generateTailoredPdf`)
+- Standard 45pt margins ensuring full OCR compatibility with Workday, Greenhouse, and Taleo parsers.
+- Automatic substitution of weak bullet points with quantified AI rewrites via `applyBulletRewrites`.
+- Built-in PDFKit core standard fonts (`Helvetica`, `Helvetica-Bold`) for zero-dependency Alpine Docker runtime execution.
+- Dynamic page numbering via buffered page ranges (`Page X of Y`).
+
+### 7.2 ATS Compliance Audit Sheet PDF (`generateAuditSheetPdf`)
+- Recruiter-grade summary banner displaying Overall Match Score and alignment tier.
+- 4-column scoring methodology matrix (Hard Skills, Experience Fit, Quantifiable Impact, ATS Formatting).
+- Missing keyword gap checklist with placement recommendations.
+- Before/after bullet optimization comparison table.
