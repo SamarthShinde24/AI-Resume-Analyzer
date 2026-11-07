@@ -62,6 +62,26 @@ export const OPENAPI_SPEC = {
         },
       },
     },
+    "/api/export-pdf": {
+      post: {
+        summary: "Native Binary PDF Tailored Resume Export (pdfkit)",
+        description: "Compiles an ATS-compliant, executive PDF document with AI bullet rewrites applied directly on the server.",
+        responses: {
+          200: { description: "Binary PDF document stream (application/pdf)." },
+          400: { description: "Missing or invalid resume text." },
+        },
+      },
+    },
+    "/api/export-audit-pdf": {
+      post: {
+        summary: "Native Binary PDF ATS Audit Sheet Export (pdfkit)",
+        description: "Generates an executive, recruiter-grade ATS Audit Sheet with multi-dimensional scores, keyword gap checklist, and rewrite matrix.",
+        responses: {
+          200: { description: "Binary PDF document stream (application/pdf)." },
+          400: { description: "Missing audit result data." },
+        },
+      },
+    },
     "/api/rescore-live": {
       post: {
         summary: "Instant Live Resume Re-Scoring",
@@ -179,6 +199,20 @@ router.get("/", (req, res) => {
         <div><span class="badge badge-post">POST</span><span class="path">/api/batch-screen</span></div>
       </div>
       <div class="summary">Recruiter Mode: screen up to 15 candidate resumes simultaneously against a single JD.</div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header">
+        <div><span class="badge badge-post">POST</span><span class="path">/api/export-pdf</span></div>
+      </div>
+      <div class="summary">Server-side binary PDF generator (pdfkit) for tailored resumes with AI rewrites.</div>
+    </div>
+
+    <div class="endpoint">
+      <div class="endpoint-header">
+        <div><span class="badge badge-post">POST</span><span class="path">/api/export-audit-pdf</span></div>
+      </div>
+      <div class="summary">Server-side binary PDF generator (pdfkit) for comprehensive ATS compliance audit sheets.</div>
     </div>
 
     <div class="endpoint">

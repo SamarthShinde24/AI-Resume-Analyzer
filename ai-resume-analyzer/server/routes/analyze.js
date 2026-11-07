@@ -12,6 +12,7 @@ import { computeSemanticSimilarity } from "../services/semanticEngine.js";
 import { detectAtsTraps } from "../services/atsTrapDetector.js";
 import { scrapeJobPosting } from "../services/jobScraper.js";
 import { generateTailoredDocx, applyBulletRewrites } from "../services/documentGenerator.js";
+import { generateTailoredPdf, generateAuditSheetPdf } from "../services/pdfGenerator.js";
 import { llmRateLimiter } from "../middleware/rateLimiter.js";
 import { requireRole } from "../middleware/authMiddleware.js";
 
@@ -317,6 +318,62 @@ router.post("/export-docx", async (req, res) => {
     console.error("Export DOCX error:", err);
     return res.status(500).json({
       error: err.message || "Failed to generate tailored Word document.",
+    });
+  }
+});
+
+router.post("/export-pdf", async (req, res) => {
+  try {
+    const { resumeText, weakBullets, candidateName, autoApplyRewrites } = req.body;
+    if (!resumeText || typeof resumeText !== "string" || resumeText.trim().length < 40) {
+      return res.status(400).json({ error: "Resume text is missing or too short to export." });
+    }
+
+    const buffer = await generateTailoredPdf({
+      resumeText,
+      weakBullets: Array.isArray(weakBullets) ? weakBullets : [],
+      candidateName: typeof candidateName === "string" ? candidateName : "",
+      autoApplyRewrites: autoApplyRewrites !== false,
+    });
+
+    const safeName = candidateName
+      ? candidateName.replace(/[^a-zA-Z0-9_-]/g, "_")
+      : "Tailored_Resume";
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${safeName}.pdf"`);
+    return res.send(buffer);
+  } catch (err) {
+    console.error("Export PDF error:", err);
+    return res.status(500).json({
+      error: err.message || "Failed to generate tailored PDF document.",
+    });
+  }
+});
+
+router.post("/export-audit-pdf", async (req, res) => {
+  try {
+    const { result, meta } = req.body;
+    if (!result || typeof result !== "object") {
+      return res.status(400).json({ error: "Audit result data is required to export audit PDF." });
+    }
+
+    const buffer = await generateAuditSheetPdf({
+      result,
+      meta: typeof meta === "object" && meta !== null ? meta : {},
+    });
+
+    const safeRole = meta?.roleTitle
+      ? meta.roleTitle.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 30)
+      : "Target_Role";
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="ATS_Audit_Report_${safeRole}.pdf"`);
+    return res.send(buffer);
+  } catch (err) {
+    console.error("Export Audit PDF error:", err);
+    return res.status(500).json({
+      error: err.message || "Failed to generate ATS Audit Sheet PDF.",
     });
   }
 });
