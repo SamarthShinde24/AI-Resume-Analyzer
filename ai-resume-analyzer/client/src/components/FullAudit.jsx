@@ -1,4 +1,17 @@
-export default function FullAudit({ score, breakdown, summary, checklist = [], weakBullets = [] }) {
+import { useState } from "react";
+import { downloadAuditSheetPdf } from "../api.js";
+
+export default function FullAudit({
+  score,
+  breakdown,
+  summary,
+  checklist = [],
+  weakBullets = [],
+  result,
+  meta = {},
+  onToast,
+}) {
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
   const getGrade = (val) => {
     if (val >= 90) return { letter: "A+", label: "Exceptional", color: "text-emerald-700 bg-emerald-50 border-emerald-200" };
     if (val >= 80) return { letter: "A", label: "Strong Candidate", color: "text-emerald-600 bg-emerald-50 border-emerald-200" };
@@ -40,6 +53,25 @@ export default function FullAudit({ score, breakdown, summary, checklist = [], w
     },
   ];
 
+  const handleDownloadPdf = async () => {
+    setDownloadingPdf(true);
+    try {
+      const payloadResult = result || {
+        match_score: score,
+        score_breakdown: breakdown,
+        summary,
+        keyword_checklist: checklist,
+        weak_bullets: weakBullets,
+      };
+      await downloadAuditSheetPdf({ result: payloadResult, meta });
+      if (onToast) onToast("Native PDF Audit Sheet downloaded!");
+    } catch (err) {
+      if (onToast) onToast(err.message || "Failed to download PDF audit sheet.");
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
   const handlePrint = () => {
     window.print();
   };
@@ -68,6 +100,25 @@ export default function FullAudit({ score, breakdown, summary, checklist = [], w
               <p className="text-xs">{grade.label}</p>
             </div>
           </div>
+
+          <button
+            type="button"
+            onClick={handleDownloadPdf}
+            disabled={downloadingPdf}
+            className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition shadow-xs print:hidden cursor-pointer flex items-center gap-1.5"
+          >
+            {downloadingPdf ? (
+              <>
+                <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span>Generating...</span>
+              </>
+            ) : (
+              <>
+                <span>📑</span>
+                <span>Download PDF</span>
+              </>
+            )}
+          </button>
 
           <button
             type="button"

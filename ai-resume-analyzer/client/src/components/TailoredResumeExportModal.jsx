@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { downloadTailoredDocx } from "../api.js";
+import { downloadTailoredDocx, downloadTailoredPdf } from "../api.js";
 
 /**
  * Client-side helper to substitute weak bullets with AI rewrites in text.
@@ -53,6 +53,7 @@ export default function TailoredResumeExportModal({
   onToast,
 }) {
   const [downloading, setDownloading] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [error, setError] = useState(null);
   const [activeView, setActiveView] = useState("preview"); // "preview" | "diff"
 
@@ -77,6 +78,24 @@ export default function TailoredResumeExportModal({
       setError(err.message || "Failed to download Word document.");
     } finally {
       setDownloading(false);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    setDownloadingPdf(true);
+    setError(null);
+    try {
+      await downloadTailoredPdf({
+        resumeText,
+        weakBullets,
+        candidateName,
+        autoApplyRewrites: true,
+      });
+      if (onToast) onToast("Tailored PDF resume downloaded successfully!");
+    } catch (err) {
+      setError(err.message || "Failed to download PDF resume.");
+    } finally {
+      setDownloadingPdf(false);
     }
   };
 
@@ -263,6 +282,25 @@ export default function TailoredResumeExportModal({
             >
               <span>🖨️</span>
               <span>Print / PDF</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleDownloadPdf}
+              disabled={downloadingPdf}
+              className="text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl transition cursor-pointer shadow-sm flex items-center gap-2"
+            >
+              {downloadingPdf ? (
+                <>
+                  <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Generating PDF...</span>
+                </>
+              ) : (
+                <>
+                  <span>📑</span>
+                  <span>Download .pdf</span>
+                </>
+              )}
             </button>
 
             <button

@@ -587,6 +587,12 @@ export default function App() {
 
               {activeTab === "audit" && (
                 <FullAudit
+                  result={result}
+                  meta={{
+                    fileName: currentFile?.name || "Uploaded_Resume.pdf",
+                    roleTitle: extractRoleTitle(currentJd),
+                  }}
+                  onToast={showToast}
                   score={result.match_score}
                   breakdown={result.score_breakdown}
                   summary={result.summary}

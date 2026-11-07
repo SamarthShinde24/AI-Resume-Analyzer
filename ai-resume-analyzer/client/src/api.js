@@ -144,6 +144,64 @@ export async function downloadTailoredDocx({
   URL.revokeObjectURL(url);
 }
 
+export async function downloadTailoredPdf({
+  resumeText,
+  weakBullets = [],
+  candidateName = "Candidate",
+  autoApplyRewrites = true,
+}) {
+  const res = await fetch("/api/export-pdf", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      resumeText,
+      weakBullets,
+      candidateName,
+      autoApplyRewrites,
+    }),
+  });
+
+  if (!res.ok) {
+    const errorJson = await res.json().catch(() => null);
+    throw new Error(errorJson?.error || `Failed to download PDF (Status ${res.status})`);
+  }
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  const cleanName = candidateName.replace(/[^a-zA-Z0-9_-]/g, "_") || "Tailored_Resume";
+  a.download = `${cleanName}_Tailored_Resume.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+export async function downloadAuditSheetPdf({ result, meta = {} }) {
+  const res = await fetch("/api/export-audit-pdf", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ result, meta }),
+  });
+
+  if (!res.ok) {
+    const errorJson = await res.json().catch(() => null);
+    throw new Error(errorJson?.error || `Failed to download Audit Sheet PDF (Status ${res.status})`);
+  }
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  const cleanRole = (meta.roleTitle || "Target_Role").replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 30);
+  a.download = `ATS_Audit_Report_${cleanRole}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 export async function rescoreLive({
   resumeText,
   jobDescription,
