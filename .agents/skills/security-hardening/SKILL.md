@@ -76,11 +76,12 @@ app.use(
 To safeguard sensitive authentication targets and costly generative AI inference pipelines, two sliding-window limiters are implemented in `server/middleware/rateLimiter.js`:
 
 ### 3.1 Authentication Rate Limiter
-- **Target:** `POST /api/auth/login`
+- **Targets:** `POST /api/auth/login`, `POST /api/auth/register`
 - **Window:** 15 minutes (`15 * 60 * 1000`)
 - **Capacity:** 15 requests per IP
 - **Status:** HTTP 429 Too Many Requests
 - **Headers:** Emits RFC standard `RateLimit-Limit`, `RateLimit-Remaining`, and `RateLimit-Reset`.
+- **Protection:** Mitigates credential stuffing, password spray, and user account creation flooding.
 
 ### 3.2 Generative AI Rate Limiter
 - **Targets:** `POST /api/analyze`, `POST /api/tailor`, `POST /api/cover-letter`, `POST /api/interview-prep`
@@ -138,6 +139,14 @@ Protected route example:
 ```javascript
 router.post("/batch-screen", requireRole("recruiter", "admin"), batchUploadMiddleware, async (req, res) => { ... });
 ```
+
+### 4.4 Dynamic Role Switching & Token Re-issuance (`PUT /api/auth/role`)
+Authenticated users can switch or upgrade their RBAC role dynamically:
+- Validates the target role against whitelist (`job_seeker`, `recruiter`, `admin`).
+- Updates the user's role record in SQLite using parameterized query.
+- Re-issues a freshly signed JWT bearer token containing the updated `role` claim.
+- Immediately enables or revokes access to `/api/batch-screen` without requiring re-registration.
+- Embedded in the UI via `UserProfileDrawer.jsx` and 1-click upgrade button in `RecruiterScreening.jsx`.
 
 ---
 

@@ -1,12 +1,12 @@
 import { Router } from "express";
-import { registerUser, loginUser, getCurrentUser } from "../services/authService.js";
+import { registerUser, loginUser, getCurrentUser, updateUserRole } from "../services/authService.js";
 import { requireAuth } from "../middleware/authMiddleware.js";
 import { authRateLimiter } from "../middleware/rateLimiter.js";
 
 const router = Router();
 
-// POST /api/auth/register
-router.post("/register", async (req, res) => {
+// POST /api/auth/register (Protected with sliding window rate limiter against account spamming)
+router.post("/register", authRateLimiter, async (req, res) => {
   try {
     const { email, password, name, role } = req.body;
     const result = await registerUser({ email, password, name, role });
@@ -35,13 +35,31 @@ router.post("/login", authRateLimiter, async (req, res) => {
   }
 });
 
-// GET /api/auth/me
+// GET /api/auth/me (Protected route to fetch current session user)
 router.get("/me", requireAuth, (req, res) => {
   const user = getCurrentUser(req.user.id);
   if (!user) {
     return res.status(404).json({ error: "User account not found." });
   }
   res.json({ user });
+});
+
+// PUT /api/auth/role (Protected route allowing user to switch or upgrade their RBAC role)
+router.put("/role", requireAuth, (req, res) => {
+  try {
+    const { role } = req.body;
+    if (!role) {
+      return res.status(400).json({ error: "Role is required." });
+    }
+    const result = updateUserRole(req.user.id, role);
+    res.json({
+      message: `User role successfully updated to '${result.user.role}'.`,
+      user: result.user,
+      token: result.token,
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message || "Failed to update user role." });
+  }
 });
 
 export default router;

@@ -103,3 +103,14 @@ export async function loginUser({ email, password }) {
 export function getCurrentUser(userId) {
   return dbRepository.findUserById(userId);
 }
+
+export function updateUserRole(userId, newRole) {
+  const updated = dbRepository.updateUserRole(userId, newRole);
+  const token = generateToken({
+    id: updated.id,
+    email: updated.email,
+    name: updated.name,
+    role: updated.role,
+  });
+  return { user: updated, token };
+}

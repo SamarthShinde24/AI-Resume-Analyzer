@@ -342,7 +342,11 @@ export default function App() {
       {/* Main Workspace */}
       <main className="max-w-5xl mx-auto px-4 pt-8">
         {viewMode === "recruiter" && (
-          <RecruiterScreening onToast={showToast} />
+          <RecruiterScreening
+            onToast={showToast}
+            currentUser={currentUser}
+            onUserUpdate={(updatedUser) => setCurrentUser(updatedUser)}
+          />
         )}
 
         {viewMode === "kanban" && !result && (
@@ -670,6 +674,7 @@ export default function App() {
         onTriggerSync={handleForceSync}
         onLogout={handleLogout}
         onToast={showToast}
+        onUserUpdate={(updatedUser) => setCurrentUser(updatedUser)}
       />
 
       {/* Cloud Auth & SQLite Sync Modal */}

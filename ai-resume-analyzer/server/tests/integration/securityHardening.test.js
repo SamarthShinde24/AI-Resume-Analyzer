@@ -27,12 +27,21 @@ describe("Production Security Hardening & RBAC Integration Tests", () => {
   });
 
   describe("Rate Limiting (express-rate-limit)", () => {
-    it("includes standard RateLimit headers on auth endpoints", async () => {
+    it("includes standard RateLimit headers on auth login endpoint", async () => {
       const res = await request(app)
         .post("/api/auth/login")
         .send({ email: "nonexistent@example.com", password: "password123" });
 
       // Even on failed login, rate limit headers must be provided
+      expect(res.headers["ratelimit-limit"]).toBeDefined();
+      expect(res.headers["ratelimit-remaining"]).toBeDefined();
+    });
+
+    it("includes standard RateLimit headers on auth register endpoint", async () => {
+      const res = await request(app)
+        .post("/api/auth/register")
+        .send({ email: "invalid-email-format", password: "short" });
+
       expect(res.headers["ratelimit-limit"]).toBeDefined();
       expect(res.headers["ratelimit-remaining"]).toBeDefined();
     });
@@ -146,6 +155,51 @@ describe("Production Security Hardening & RBAC Integration Tests", () => {
       expect(res.body.token).toBeDefined();
     });
 
+    describe("Role Upgrade & Switching (/api/auth/role)", () => {
+      it("rejects unauthenticated role update requests with HTTP 401", async () => {
+        const res = await request(app)
+          .put("/api/auth/role")
+          .send({ role: ROLES.RECRUITER });
+
+        expect(res.status).toBe(401);
+        expect(res.body.error).toContain("Authentication required");
+      });
+
+      it("rejects role update if role body field is missing with HTTP 400", async () => {
+        const res = await request(app)
+          .put("/api/auth/role")
+          .set("Authorization", `Bearer ${seekerToken}`)
+          .send({});
+
+        expect(res.status).toBe(400);
+        expect(res.body.error).toContain("Role is required");
+      });
+
+      it("rejects role update if role is invalid with HTTP 400", async () => {
+        const res = await request(app)
+          .put("/api/auth/role")
+          .set("Authorization", `Bearer ${seekerToken}`)
+          .send({ role: "super_admin_bypass" });
+
+        expect(res.status).toBe(400);
+        expect(res.body.error).toContain("Invalid role");
+      });
+
+      it("successfully updates role from 'job_seeker' to 'recruiter' and returns updated token", async () => {
+        const res = await request(app)
+          .put("/api/auth/role")
+          .set("Authorization", `Bearer ${seekerToken}`)
+          .send({ role: ROLES.RECRUITER });
+
+        expect(res.status).toBe(200);
+        expect(res.body.user.role).toBe(ROLES.RECRUITER);
+        expect(res.body.token).toBeDefined();
+
+        // Update seekerToken to the promoted token
+        seekerToken = res.body.token;
+      });
+    });
+
     describe("Batch Screening RBAC Gating (/api/batch-screen)", () => {
       const sampleJd = "Senior Backend Engineer with Node.js, Express, Docker, and PostgreSQL expertise.";
       const sampleResumeBuffer = Buffer.from(
@@ -163,22 +217,11 @@ describe("Production Security Hardening & RBAC Integration Tests", () => {
         expect(res.body.error).toContain("Authentication required");
       });
 
-      it("rejects 'job_seeker' role with HTTP 403 Forbidden", async () => {
+      it("authorizes promoted user now that their role is 'recruiter'", async () => {
+        // seekerToken was promoted to recruiter in the previous test
         const res = await request(app)
           .post("/api/batch-screen")
           .set("Authorization", `Bearer ${seekerToken}`)
-          .field("jobDescription", sampleJd)
-          .attach("resumes", sampleResumeBuffer, "alex_resume.txt");
-
-        expect(res.status).toBe(403);
-        expect(res.body.error).toContain("restricted");
-        expect(res.body.currentRole).toBe(ROLES.JOB_SEEKER);
-      });
-
-      it("authorizes 'recruiter' role and processes batch screening successfully", async () => {
-        const res = await request(app)
-          .post("/api/batch-screen")
-          .set("Authorization", `Bearer ${recruiterToken}`)
           .field("jobDescription", sampleJd)
           .attach("resumes", sampleResumeBuffer, "alex_resume.txt");
 
@@ -187,6 +230,27 @@ describe("Production Security Hardening & RBAC Integration Tests", () => {
         expect(res.body.summary.total_screened).toBe(1);
         expect(res.body.leaderboard).toHaveLength(1);
         expect(res.body.leaderboard[0].candidate_name).toContain("Alex Morgan");
+      });
+
+      it("allows switching back to 'job_seeker' and subsequently denies batch screening with HTTP 403", async () => {
+        const demoteRes = await request(app)
+          .put("/api/auth/role")
+          .set("Authorization", `Bearer ${seekerToken}`)
+          .send({ role: ROLES.JOB_SEEKER });
+
+        expect(demoteRes.status).toBe(200);
+        expect(demoteRes.body.user.role).toBe(ROLES.JOB_SEEKER);
+        const demotedToken = demoteRes.body.token;
+
+        const batchRes = await request(app)
+          .post("/api/batch-screen")
+          .set("Authorization", `Bearer ${demotedToken}`)
+          .field("jobDescription", sampleJd)
+          .attach("resumes", sampleResumeBuffer, "alex_resume.txt");
+
+        expect(batchRes.status).toBe(403);
+        expect(batchRes.body.error).toContain("restricted");
+        expect(batchRes.body.currentRole).toBe(ROLES.JOB_SEEKER);
       });
 
       it("authorizes 'admin' role and processes batch screening successfully", async () => {

@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo } from "react";
 import { batchScreenResumes, scrapeJobUrl } from "../api.js";
-import { getStoredUser } from "../services/authClient.js";
+import { getStoredUser, updateUserRole } from "../services/authClient.js";
 import { SAMPLE_PRESETS } from "../data/samplePresets.js";
 import CandidateCompareModal from "./CandidateCompareModal.jsx";
 
@@ -44,9 +44,10 @@ export const WEIGHT_PRESETS = {
     baseWeight: 0.2,
   },
 };
-export default function RecruiterScreening({ onToast }) {
-  const storedUser = getStoredUser();
-  const isRecruiter = storedUser?.role === "recruiter" || storedUser?.role === "admin";
+export default function RecruiterScreening({ onToast, currentUser, onUserUpdate }) {
+  const activeUser = currentUser || getStoredUser();
+  const isRecruiter = activeUser?.role === "recruiter" || activeUser?.role === "admin";
+  const [upgradingRole, setUpgradingRole] = useState(false);
   const [jobDescription, setJobDescription] = useState(DEFAULT_SAMPLE_JD);
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -299,17 +300,39 @@ export default function RecruiterScreening({ onToast }) {
         </div>
 
         {!isRecruiter && (
-          <div className="mt-4 p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <span className="text-base">🔒</span>
+          <div className="mt-4 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-2xs">
+            <div className="flex items-start gap-2.5">
+              <span className="text-xl shrink-0">🔒</span>
               <div>
                 <span className="font-bold">Role-Based Access Control: </span>
                 <span>
                   Batch screening requires an account with role <code className="px-1.5 py-0.5 rounded bg-amber-100 font-mono text-[11px] font-bold">recruiter</code> or <code className="px-1.5 py-0.5 rounded bg-amber-100 font-mono text-[11px] font-bold">admin</code>.
-                  {storedUser ? ` You are currently signed in as '${storedUser.role}'.` : " You are currently in Guest mode."}
+                  {activeUser ? ` You are currently signed in as '${activeUser.role}'.` : " You are currently in Guest mode."}
                 </span>
               </div>
             </div>
+            {activeUser && (
+              <button
+                type="button"
+                onClick={async () => {
+                  setUpgradingRole(true);
+                  try {
+                    const updated = await updateUserRole("recruiter");
+                    if (onUserUpdate) onUserUpdate(updated);
+                    if (onToast) onToast("Account role upgraded to Recruiter! Batch screening is now unlocked.");
+                  } catch (err) {
+                    if (onToast) onToast(err.message || "Failed to switch role.");
+                  } finally {
+                    setUpgradingRole(false);
+                  }
+                }}
+                disabled={upgradingRole}
+                className="shrink-0 px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-xs transition cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+              >
+                <span>⚡</span>
+                <span>{upgradingRole ? "Upgrading..." : "Switch to Recruiter Account (1-Click)"}</span>
+              </button>
+            )}
           </div>
         )}
 

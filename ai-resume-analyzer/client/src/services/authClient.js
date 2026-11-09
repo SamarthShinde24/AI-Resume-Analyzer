@@ -84,6 +84,28 @@ export async function checkSession() {
   }
 }
 
+export async function updateUserRole(newRole) {
+  const token = getStoredToken();
+  if (!token) throw new Error("Authentication required.");
+
+  const res = await fetch(`${API_BASE}/auth/role`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ role: newRole }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || "Failed to update user role.");
+  }
+
+  setSession(data.user, data.token);
+  return data.user;
+}
+
 export async function syncLocalDataToCloud(history = [], kanban = []) {
   const token = getStoredToken();
   if (!token) return null;
